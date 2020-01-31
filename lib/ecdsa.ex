@@ -4,7 +4,7 @@ defmodule EllipticCurve.Ecdsa do
 
   Functions:
   - sign()
-  - verify()
+  - verify?()
   """
 
   alias EllipticCurve.{PrivateKey, PublicKey}

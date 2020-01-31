@@ -49,7 +49,8 @@ defmodule EllipticCurve.Signature do
       %EllipticCurve.Signature.Data{r: 123, s: 456}
   """
   def fromBase64!(base64String) do
-    Base64.decode(base64String)
+    base64String
+    |> Base64.decode()
     |> fromDer()
   end
 
@@ -119,7 +120,8 @@ defmodule EllipticCurve.Signature do
       {:ok, "YXNvZGlqYW9pZGphb2lkamFvaWRqc2Fpb3NkamE="}
   """
   def toBase64(signature) do
-    toDer(signature)
+    signature
+    |> toDer()
     |> Base64.encode()
   end
 
