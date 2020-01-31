@@ -8,6 +8,9 @@ defmodule EllipticCurve.Ecdsa do
   """
 
   alias EllipticCurve.{PrivateKey, PublicKey}
+  alias EllipticCurve.Utils.{BinaryAscii, Math}
+  alias EllipticCurve.Utils.Integer, as: IntegerUtils
+  alias EllipticCurve.Signature.Data, as: Signature
 
   @doc """
   Generates a message signature based on a private key
@@ -18,7 +21,7 @@ defmodule EllipticCurve.Ecdsa do
   - options [keyword list]: refines request
     - hashfunc [:method]: defines the hash function applied to the message. Must be compatible with :crypto.hash;
 
-  Returns {:ok, signature}:
+  Returns signature:
   - signature [string]: base-64 message signature;
 
   ## Example:
@@ -26,11 +29,27 @@ defmodule EllipticCurve.Ecdsa do
       iex> EllipticCurve.Ecdsa.sign("my message", privateKey)
       {:ok, YXNvZGlqYW9pZGphb2lkamFvaWRqc2Fpb3NkamE=}
   """
+  @spec sign(string, EllipticCurve.PrivateKey.Data, options) :: EllipticCurve.Signature.Data
   def sign(message, privateKey, options \\ []) do
     %{hashfunc: hashfunc} = Enum.into(options, %{hashfunc: :sha256})
 
-    :crypto.hash(hashfunc, message)
-    |> PrivateKey.sign(privateKey)
+    numberMessage =
+      :crypto.hash(hashfunc, message)
+      |> BinaryAscii.numberFromString()
+
+    curve = privateKey.curve
+
+    randNum = IntegerUtils.between(1, curve.N - 1)
+
+    r =
+      Math.multiply(curve.G, randNum, curve.A, curve.P, curve.N).x
+      |> IntegerUtils.modulo(curve.N)
+
+    s =
+      ((numberMessage + r * privateKey.secret) * Math.inv(randNum, curve.N))
+      |> IntegerUtils.modulo(curve.N)
+
+    %Signature{r: r, s: s}
   end
 
   @doc """
@@ -43,22 +62,51 @@ defmodule EllipticCurve.Ecdsa do
   - options [keyword list]: refines request
     - hashfunc [:method]: defines the hash function applied to the message. Must be compatible with :crypto.hash;
 
-  Returns {:ok, verified}:
+  Returns:
   - verified [bool]: true if message, public key and signature are compatible, false otherwise;
 
   ## Example:
 
-      iex> EllipticCurve.Ecdsa.verify(message, signature, publicKey)
+      iex> EllipticCurve.Ecdsa.verify?(message, signature, publicKey)
       {:ok, true}
-      iex> EllipticCurve.Ecdsa.verify(wrongMessage, signature, publicKey)
+      iex> EllipticCurve.Ecdsa.verify?(wrongMessage, signature, publicKey)
       {:ok, false}
-      iex> EllipticCurve.Ecdsa.verify(message, wrongSignature, publicKey)
+      iex> EllipticCurve.Ecdsa.verify?(message, wrongSignature, publicKey)
       {:ok, false}
-      iex> EllipticCurve.Ecdsa.verify(message, signature, wrongPublicKey)
+      iex> EllipticCurve.Ecdsa.verify?(message, signature, wrongPublicKey)
       {:ok, false}
   """
-  def verify(message, signature, publicKey, hashfunc \\ :sha256) do
-    :crypto.hash(hashfunc, message)
-    |> PublicKey.verify(publicKey)
+  @spec verify?(string, EllipticCurve.Signature.Data, EllipticCurve.PublicKey.Data, options) ::
+          bool
+  def verify?(message, signature, publicKey, options \\ []) do
+    %{hashfunc: hashfunc} = Enum.into(options, %{hashfunc: :sha256})
+
+    numberMessage =
+      :crypto.hash(hashfunc, message)
+      |> BinaryAscii.numberFromString()
+
+    curve = publicKey.curve
+
+    inv = Math.inv(signature.s, curve.N)
+
+    signature.r ==
+      Math.add(
+        Math.multiply(
+          G,
+          IntegerUtils.modulo(numberMessage * inv, curve.N),
+          curve.A,
+          curve.P,
+          curve.N
+        ),
+        Math.multiply(
+          point,
+          IntegerUtils.modulo(signature.r * inv, curve.N),
+          curve.A,
+          curve.P,
+          curve.N
+        ),
+        curve.P,
+        curve.A
+      ).x
   end
 end
