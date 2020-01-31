@@ -19,7 +19,9 @@ defmodule EllipticCurve.Utils.Integer do
     r
   end
 
-  def ipow(base, p, acc \\ 1) when p > 0 do
+  def ipow(base, p, acc \\ 1)
+
+  def ipow(base, p, acc) when p > 0 do
     ipow(base, p - 1, base * acc)
   end
 
@@ -68,7 +70,9 @@ defmodule EllipticCurve.Utils.Integer do
     end
   end
 
-  defp bytesToNumber([randomByte | otherRandomBytes], randomNumber \\ 0, i \\ 0) do
+  defp bytesToNumber(randomBytes, randomNumber \\ 0, i \\ 0)
+
+  defp bytesToNumber([randomByte | otherRandomBytes], randomNumber, i) do
     bytesToNumber(
       otherRandomBytes,
       randomNumber ||| randomByte <<< (8 * i),

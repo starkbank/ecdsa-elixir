@@ -3,11 +3,11 @@ defmodule EllipticCurve.Curve.KnownCurves do
   Describes the elliptic curves supported by the package
   """
 
-  alias EllipticCurve.Curve.CurveData, as: CurveData
+  alias EllipticCurve.Curve.Data, as: Data
 
   def secp256k1() do
-    %CurveData{
-      name: "secp256k1",
+    %Data{
+      name: :secp256k1,
       A: 0x0000000000000000000000000000000000000000000000000000000000000000,
       B: 0x0000000000000000000000000000000000000000000000000000000000000007,
       P: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F,
@@ -19,8 +19,8 @@ defmodule EllipticCurve.Curve.KnownCurves do
   end
 
   def prime256v1() do
-    %CurveData{
-      name: "prime256v1",
+    %Data{
+      name: :prime256v1,
       A: 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC,
       B: 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B,
       P: 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF,

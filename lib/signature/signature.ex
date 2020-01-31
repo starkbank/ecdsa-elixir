@@ -101,7 +101,7 @@ defmodule EllipticCurve.Signature do
       raise "trailing junk after DER numbers: " <> BinaryAscii.hexFromBinary(secondEmpty)
     end
 
-    fromRS(r, s)
+    %Data{r: r, s: s}
   end
 
   @doc """
@@ -138,6 +138,9 @@ defmodule EllipticCurve.Signature do
       {:ok, "  ˜813981 ùu1i3 i"}
   """
   def toDer(signature) do
-    Der.encodeSequence(Der.encodeInteger(signature.r), Der.encodeInteger(signature.s))
+    Der.encodeSequence(
+      Der.encodeInteger(signature.r),
+      Der.encodeInteger(signature.s)
+    )
   end
 end

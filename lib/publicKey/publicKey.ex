@@ -1,6 +1,6 @@
 defmodule EllipticCurve.PublicKey do
   @moduledoc """
-  Used to convert signature between struct (raw numbers r and s) and der or pem formats
+  Used to convert public keys between struct and der or pem formats
 
   Functions:
   - toPem()
@@ -14,29 +14,6 @@ defmodule EllipticCurve.PublicKey do
   alias EllipticCurve.Utils.{Der, Base64, BinaryAscii, Point}
   alias EllipticCurve.{Curve}
   alias EllipticCurve.PublicKey.{Data}
-
-  @doc false
-  def toString(publicKey, encoded: false) do
-    curveLength = Curve.getLength(publicKey.curve)
-
-    xString =
-      BinaryAscii.stringFromNumber(
-        publicKey.point.x,
-        curveLength
-      )
-
-    yString =
-      BinaryAscii.stringFromNumber(
-        publicKey.point.y,
-        curveLength
-      )
-
-    if encoded do
-      "\x00\x04" <> xString <> yString
-    else
-      xString <> yString
-    end
-  end
 
   @doc """
   Converts a public key in decoded struct format into a pem string
@@ -80,24 +57,26 @@ defmodule EllipticCurve.PublicKey do
     )
   end
 
-  @doc false
-  def fromString(string, curve: :secp256k1, validatePoint: true) do
-    curveData = Curve.getCurveByName(curve)
-    baseLength = Curve.getLength(curveData)
+  defp toString(publicKey, encoded: false) do
+    curveLength = Curve.getLength(publicKey.curve)
 
-    xs = String.slice(string, 0, baseLength)
-    ys = String.slice(string, baseLength, length(string) - baseLength)
+    xString =
+      BinaryAscii.stringFromNumber(
+        publicKey.point.x,
+        curveLength
+      )
 
-    point = %Point{
-      x: BinaryAscii.numberFromString(xs),
-      y: BinaryAscii.numberFromString(ys)
-    }
+    yString =
+      BinaryAscii.stringFromNumber(
+        publicKey.point.y,
+        curveLength
+      )
 
-    if validatePoint and !curve.contains?(point) do
-      raise "point (#{x}, #{y}) is not valid for curve #{curveData.name}"
+    if encoded do
+      "\x00\x04" <> xString <> yString
+    else
+      xString <> yString
     end
-
-    %Data{point: point, curve: curve}
   end
 
   @doc """
@@ -135,7 +114,8 @@ defmodule EllipticCurve.PublicKey do
       %EllipticCurve.PublicKey.Data{...}
   """
   def fromPem!(pem) do
-    fromDer(Der.fromPem(pem))
+    Der.fromPem(pem)
+    |> fromDer()
   end
 
   @doc """
@@ -198,5 +178,24 @@ defmodule EllipticCurve.PublicKey do
     end
 
     fromString(String.slice(pointString, 2, length(pointString) - 2), curve)
+  end
+
+  defp fromString(string, curve: :secp256k1, validatePoint: true) do
+    curveData = Curve.getCurveByName(curve)
+    baseLength = Curve.getLength(curveData)
+
+    xs = String.slice(string, 0, baseLength)
+    ys = String.slice(string, baseLength, String.length(string) - baseLength)
+
+    point = %Point{
+      x: BinaryAscii.numberFromString(xs),
+      y: BinaryAscii.numberFromString(ys)
+    }
+
+    if validatePoint and !curve.contains?(point) do
+      raise "point (#{x}, #{y}) is not valid for curve #{curveData.name}"
+    end
+
+    %Data{point: point, curve: curve}
   end
 end
