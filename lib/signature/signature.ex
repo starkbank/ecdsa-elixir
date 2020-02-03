@@ -140,9 +140,9 @@ defmodule EllipticCurve.Signature do
       {:ok, "  ˜813981 ùu1i3 i"}
   """
   def toDer(signature) do
-    Der.encodeSequence(
+    Der.encodeSequence([
       Der.encodeInteger(signature.r),
       Der.encodeInteger(signature.s)
-    )
+    ])
   end
 end

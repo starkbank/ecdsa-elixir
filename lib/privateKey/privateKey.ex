@@ -12,11 +12,11 @@ defmodule EllipticCurve.PrivateKey do
   - fromDer!()
   """
 
-  alias EllipticCurve.{Curve}
+  alias EllipticCurve.{PublicKey, Curve}
   alias EllipticCurve.PrivateKey.{Data}
   alias EllipticCurve.PublicKey.Data, as: PublicKeyData
   alias EllipticCurve.Utils.Integer, as: IntegerUtils
-  alias EllipticCurve.Utils.{Der, BinaryAscii}
+  alias EllipticCurve.Utils.{Der, BinaryAscii, Math}
 
   @hexAt "\x00"
 
@@ -120,7 +120,7 @@ defmodule EllipticCurve.PrivateKey do
       {:ok, "    ó^ad  12 "}
   """
   def toDer(privateKey) do
-    Der.encodeSequence(
+    Der.encodeSequence([
       Der.encodeInteger(1),
       Der.encodeOctetString(toString(privateKey)),
       Der.encodeConstructed(0, Der.encodeOid(privateKey.curve.oid)),
@@ -128,7 +128,7 @@ defmodule EllipticCurve.PrivateKey do
         1,
         Der.encodeBitString(PublicKey.toString(getPublicKey(privateKey), true))
       )
-    )
+    ])
   end
 
   defp toString(privateKey) do

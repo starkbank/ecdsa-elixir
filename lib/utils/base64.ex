@@ -1,4 +1,4 @@
-defmodule Base64 do
+defmodule EllipticCurve.Utils.Base64 do
   @moduledoc false
 
   def decode(string) do
@@ -6,6 +6,6 @@ defmodule Base64 do
   end
 
   def encode(string) do
-    Base.encode64!(string)
+    Base.encode64(string)
   end
 end

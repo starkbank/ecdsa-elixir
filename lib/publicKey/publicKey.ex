@@ -11,7 +11,7 @@ defmodule EllipticCurve.PublicKey do
   - fromDer!()
   """
 
-  alias EllipticCurve.Utils.{Der, Base64, BinaryAscii, Point}
+  alias EllipticCurve.Utils.{Der, BinaryAscii, Point}
   alias EllipticCurve.{Curve}
   alias EllipticCurve.PublicKey.{Data}
 
@@ -48,16 +48,17 @@ defmodule EllipticCurve.PublicKey do
       {:ok, "  1 ó~  ia "}
   """
   def toDer(publicKey) do
-    Der.encodeSequence(
-      Der.encodeSequence(
+    Der.encodeSequence([
+      Der.encodeSequence([
         Der.encodeOid({1, 2, 840, 10045, 2, 1}),
         Der.encodeOid(publicKey.curve.oid)
-      ),
+      ]),
       Der.encodeBitString(toString(publicKey, true))
-    )
+    ])
   end
 
-  defp toString(publicKey, encoded) do
+  @doc false
+  def toString(publicKey, encoded) do
     curveLength = Curve.getLength(publicKey.curve)
 
     xString =

@@ -13,15 +13,15 @@ defmodule EllipticCurve.Curve.KnownCurves do
 
   def getCurveByOid(oid) do
     case oid do
-      @secp256k1Oid -> KnownCurves.secp256k1()
-      @prime256v1 -> KnownCurves.prime256v1()
+      @secp256k1Oid -> secp256k1()
+      @prime256v1 -> prime256v1()
     end
   end
 
   def getCurveByName(name) do
     case name do
-      @secp256k1name -> KnownCurves.secp256k1()
-      @prime256v1name -> KnownCurves.prime256v1()
+      @secp256k1name -> secp256k1()
+      @prime256v1name -> prime256v1()
     end
   end
 

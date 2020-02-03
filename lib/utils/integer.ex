@@ -3,9 +3,6 @@ defmodule EllipticCurve.Utils.Integer do
 
   use Bitwise
 
-  # 2 ^ 256
-  @defaultRandomMaximum 115_792_089_237_316_195_423_570_985_008_687_907_853_269_984_665_640_564_039_457_584_007_913_129_639_936
-
   def modulo(x, n) do
     rem(x, n)
     |> correctNegativeModulo(n)
@@ -29,11 +26,7 @@ defmodule EllipticCurve.Utils.Integer do
     acc
   end
 
-  def between(
-        minimum \\ 0,
-        maximum \\ @defaultRandomMaximum
-      )
-      when minimum < maximum do
+  def between(minimum, maximum) when minimum < maximum do
     range = maximum - minimum + 1
     {bytesNeeded, mask} = calculateParameters(range)
 

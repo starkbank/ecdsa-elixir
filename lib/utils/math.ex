@@ -107,20 +107,20 @@ defmodule EllipticCurve.Utils.Math do
         IntegerUtils.ipow(p.y, 2)
         |> IntegerUtils.modulo(P)
 
-      S =
+      s =
         (4 * p.x * ysq)
         |> IntegerUtils.modulo(P)
 
-      M =
+      m =
         (3 * IntegerUtils.ipow(p.x, 2) + A * IntegerUtils.ipow(p.z, 4))
         |> IntegerUtils.modulo(P)
 
       nx =
-        (IntegerUtils.ipow(M, 2) - 2 * S)
+        (IntegerUtils.ipow(m, 2) - 2 * s)
         |> IntegerUtils.modulo(P)
 
       ny =
-        (M * (S - nx) - 8 * IntegerUtils.ipow(ysq, 2))
+        (m * (s - nx) - 8 * IntegerUtils.ipow(ysq, 2))
         |> IntegerUtils.modulo(P)
 
       nz =
@@ -144,55 +144,55 @@ defmodule EllipticCurve.Utils.Math do
       if q.y == 0 do
         p
       else
-        U1 =
+        u1 =
           (p.x * IntegerUtils.ipow(q.z, 2))
           |> IntegerUtils.modulo(P)
 
-        U2 =
+        u2 =
           (q.x * IntegerUtils.ipow(p.z, 2))
           |> IntegerUtils.modulo(P)
 
-        S1 =
+        s1 =
           (p.y * IntegerUtils.ipow(q.z, 3))
           |> IntegerUtils.modulo(P)
 
-        S2 =
+        s2 =
           (q.y * IntegerUtils.ipow(p.z, 3))
           |> IntegerUtils.modulo(P)
 
-        if U1 == U2 do
-          if S1 != S2 do
+        if u1 == u2 do
+          if s1 != s2 do
             %Point{x: 0, y: 0, z: 1}
           else
             jacobianDouble(p, A, P)
           end
         else
-          H = U2 - U1
+          h = u2 - u1
 
-          R = S2 - S1
+          r = s2 - s1
 
-          H2 =
-            (H * H)
+          h2 =
+            (h * h)
             |> IntegerUtils.modulo(P)
 
-          H3 =
-            (H * H2)
+          h3 =
+            (h * h2)
             |> IntegerUtils.modulo(P)
 
-          U1H2 =
-            (U1 * H2)
+          u1h2 =
+            (u1 * h2)
             |> IntegerUtils.modulo(P)
 
           nx =
-            (IntegerUtils.ipow(R, 2) - H3 - 2 * U1H2)
+            (IntegerUtils.ipow(r, 2) - h3 - 2 * u1h2)
             |> IntegerUtils.modulo(P)
 
           ny =
-            (R * (U1H2 - nx) - S1 * H3)
+            (r * (u1h2 - nx) - s1 * h3)
             |> IntegerUtils.modulo(P)
 
           nz =
-            (H * p.z * q.z)
+            (h * p.z * q.z)
             |> IntegerUtils.modulo(P)
 
           %Point{x: nx, y: ny, z: nz}

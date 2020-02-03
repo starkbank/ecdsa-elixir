@@ -1,4 +1,4 @@
-defmodule BinaryAscii do
+defmodule EllipticCurve.Utils.BinaryAscii do
   @moduledoc false
 
   @doc """
@@ -9,7 +9,7 @@ defmodule BinaryAscii do
   :return: hexadecimal string
   """
   def hexFromBinary(data) do
-    Base.encode16!(data)
+    Base.encode16(data)
   end
 
   @doc """

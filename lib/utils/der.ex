@@ -15,7 +15,7 @@ defmodule EllipticCurve.Utils.Der do
   @hex160 0x80
   @hex224 0xE0
 
-  alias EllipticCurve.Utils.{BinaryAScii, Base64}
+  alias EllipticCurve.Utils.{BinaryAscii, Base64}
 
   def encodeSequence(encodedPieces) do
     Enum.sum(for piece <- encodedPieces, do: byte_size(piece))
