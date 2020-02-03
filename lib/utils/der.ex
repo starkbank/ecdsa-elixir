@@ -1,4 +1,4 @@
-defmodule Der do
+defmodule EllipticCurve.Utils.Der do
   @moduledoc false
 
   use Bitwise
@@ -10,7 +10,6 @@ defmodule Der do
   @hexF "\x06"
   @hex0 "\x30"
 
-  @hex31 0x1F
   @hex127 0x7F
   @hex129 0xA0
   @hex160 0x80
@@ -19,8 +18,8 @@ defmodule Der do
   alias EllipticCurve.Utils.{BinaryAScii, Base64}
 
   def encodeSequence(encodedPieces) do
-    Enum.sum(for piece <- encodedPieces, do: length(piece))
-    |> fn totalLength -> @hex0 <> encodeLength(totalLength) <> Enum.join(encodedPieces) end
+    Enum.sum(for piece <- encodedPieces, do: byte_size(piece))
+    |> (fn totalLength -> @hex0 <> encodeLength(totalLength) <> Enum.join(encodedPieces) end).()
   end
 
   def encodeInteger(x) when x >= 0 do
@@ -37,7 +36,7 @@ defmodule Der do
     end
   end
 
-  defp complementIntegerString(x) when rem(length(x), 2) == 1 do
+  defp complementIntegerString(x) when rem(byte_size(x), 2) == 1 do
     "0" <> x
   end
 
@@ -46,21 +45,21 @@ defmodule Der do
   end
 
   def encodeOid([first | [second | pieces]]) when first <= 2 and second <= 39 do
-    (<<40 * first + second>> <> to_string(for piece <- pieces, do: encodeNumber(p)))
+    (<<40 * first + second>> <> to_string(for piece <- pieces, do: encodeNumber(piece)))
     |> Enum.join()
-    |> fn body -> @hexF <> encodeLength(length(body)) <> body end
+    |> (fn body -> @hexF <> encodeLength(byte_size(body)) <> body end).()
   end
 
   def encodeBitString(t) do
-    @hexC ++ encodeLength(length(t)) ++ t
+    @hexC ++ encodeLength(byte_size(t)) ++ t
   end
 
   def encodeOctetString(t) do
-    @hexD ++ encodeLength(length(t)) ++ t
+    @hexD ++ encodeLength(byte_size(t)) ++ t
   end
 
   def encodeConstructed(tag, value) do
-    [@hex129 + tag] ++ encodeLength(length(value)) ++ value
+    [@hex129 + tag] ++ encodeLength(byte_size(value)) ++ value
   end
 
   def removeSequence(string) do
@@ -89,8 +88,6 @@ defmodule Der do
 
     {body, rest} = splitOnLength(trimmedString)
 
-    numbers = []
-
     [n0 | numbers] = removeObjectRecursion(body)
 
     first = div(n0, 40)
@@ -115,14 +112,14 @@ defmodule Der do
   end
 
   def removeOctetString(string) do
-    trimmedString = checkSequenceError(string = string, start = @hexD, expected = "04")
+    trimmedString = checkSequenceError(string, @hexD, "04")
 
     splitOnLength(trimmedString)
   end
 
   def removeConstructed(<<s0>> <> trimmedString) do
-    if (s0 &&& hex224) != @hex129 do
-      throw("wanted constructed tag (0xa0-0xbf), got #{to_string(s0, 16)}")
+    if (s0 &&& @hex224) != @hex129 do
+      throw("wanted constructed tag (0xa0-0xbf), got #{Integer.to_string(s0, 16)}")
     end
 
     splitOnLength(trimmedString)
@@ -178,10 +175,10 @@ defmodule Der do
 
   def encodeLength(lengthValue) when lengthValue > 0 do
     lengthValue
-    |> to_string(16)
+    |> Integer.to_string(16)
     |> checkOddity()
     |> BinaryAscii.binaryFromHex()
-    |> fn s -> <<@hex160 ||| byte_size(s)>> <> s end
+    |> (fn s -> <<@hex160 ||| byte_size(s)>> <> s end).()
   end
 
   defp checkOddity(s) when rem(byte_size(s), 2) == 1 do
@@ -208,7 +205,7 @@ defmodule Der do
     end
   end
 
-  defp encodeNumberRecursive(n) do
+  defp encodeNumberRecursive(_n) do
     []
   end
 
@@ -254,10 +251,10 @@ defmodule Der do
   defp readLength(string) do
     num = getFirstByte(string)
 
-    if (num &&& hex160) == 0 do
-      {num &&& hex127, 1}
+    if (num &&& @hex160) == 0 do
+      {num &&& @hex127, 1}
     else
-      lengthLength = num &&& hex127
+      lengthLength = num &&& @hex127
 
       if lengthLength > byte_size(string) - 1 do
         throw("ran out of length bytes")
@@ -275,13 +272,15 @@ defmodule Der do
 
   defp checkSequenceError(<<first>> <> rest, start, expected) do
     if first != start do
-      throw("wanted sequence #{to_string(expected, 16)}, got #{to_string(start, 16)}")
+      throw(
+        "wanted sequence #{Integer.to_string(expected, 16)}, got #{Integer.to_string(start, 16)}"
+      )
     end
 
     rest
   end
 
-  defp getFirstByte(<<first>> <> rest) do
+  defp getFirstByte(<<first>> <> _rest) do
     first
   end
 end

@@ -32,7 +32,7 @@ defmodule BinaryAscii do
   def numberFromString(string) do
     hexFromBinary(string)
     |> Integer.parse(16)
-    |> fn {parsedInt, ""} -> parsedInt end
+    |> (fn {parsedInt, ""} -> parsedInt end).()
   end
 
   @doc """

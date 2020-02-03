@@ -41,7 +41,7 @@ defmodule EllipticCurve.Utils.Math do
   :param n: Mod for division
   :return: Value representing the division
   """
-  def inv(x, n) when x == 0 do
+  def inv(x, _n) when x == 0 do
     0
   end
 
@@ -99,36 +99,36 @@ defmodule EllipticCurve.Utils.Math do
   # :param P: Prime number in the module of the equation Y^2 = X^3 + A*X + B (mod p)
   # :param A: Coefficient of the first-order term of the equation Y^2 = X^3 + A*X + B (mod p)
   # :return: Point that represents the sum of First and Second Point
-  defp jacobianDouble(p, A, P) when p.y == 0 do
-    %Point{x: 0, y: 0, z: 0}
-  end
-
   defp jacobianDouble(p, A, P) do
-    ysq =
-      IntegerUtils.ipow(p.y, 2)
-      |> IntegerUtils.modulo(P)
+    if p.y == 0 do
+      %Point{x: 0, y: 0, z: 0}
+    else
+      ysq =
+        IntegerUtils.ipow(p.y, 2)
+        |> IntegerUtils.modulo(P)
 
-    S =
-      (4 * p.x * ysq)
-      |> IntegerUtils.modulo(P)
+      S =
+        (4 * p.x * ysq)
+        |> IntegerUtils.modulo(P)
 
-    M =
-      (3 * IntegerUtils.ipow(p.x, 2) + A * IntegerUtils.ipow(p.z, 4))
-      |> IntegerUtils.modulo(P)
+      M =
+        (3 * IntegerUtils.ipow(p.x, 2) + A * IntegerUtils.ipow(p.z, 4))
+        |> IntegerUtils.modulo(P)
 
-    nx =
-      (IntegerUtils.ipow(M, 2) - 2 * S)
-      |> IntegerUtils.modulo(P)
+      nx =
+        (IntegerUtils.ipow(M, 2) - 2 * S)
+        |> IntegerUtils.modulo(P)
 
-    ny =
-      (M * (S - nx) - 8 * IntegerUtils.ipow(ysq, 2))
-      |> IntegerUtils.modulo(P)
+      ny =
+        (M * (S - nx) - 8 * IntegerUtils.ipow(ysq, 2))
+        |> IntegerUtils.modulo(P)
 
-    nz =
-      (2 * p.y * p.z)
-      |> IntegerUtils.modulo(P)
+      nz =
+        (2 * p.y * p.z)
+        |> IntegerUtils.modulo(P)
 
-    %Point{x: nx, y: ny, z: nz}
+      %Point{x: nx, y: ny, z: nz}
+    end
   end
 
   # Adds two points in the elliptic curve
@@ -137,67 +137,67 @@ defmodule EllipticCurve.Utils.Math do
   # :param P: Prime number in the module of the equation Y^2 = X^3 + A*X + B (mod p)
   # :param A: Coefficient of the first-order term of the equation Y^2 = X^3 + A*X + B (mod p)
   # :return: Point that represents the sum of First and Second Point
-  defp jacobianAdd(p, q, _A, _P) when p.y == 0 do
-    q
-  end
-
-  defp jacobianAdd(p, q, _A, _P) when q.y == 0 do
-    p
-  end
-
   defp jacobianAdd(p, q, A, P) do
-    U1 =
-      (p.x * IntegerUtils.ipow(q.z, 2))
-      |> IntegerUtils.modulo(P)
-
-    U2 =
-      (q.x * IntegerUtils.ipow(p.z, 2))
-      |> IntegerUtils.modulo(P)
-
-    S1 =
-      (p.y * IntegerUtils.ipow(q.z, 3))
-      |> IntegerUtils.modulo(P)
-
-    S2 =
-      (q.y * IntegerUtils.ipow(p.z, 3))
-      |> IntegerUtils.modulo(P)
-
-    if U1 == U2 do
-      if S1 != S2 do
-        %Point{x: 0, y: 0, z: 1}
-      else
-        jacobianDouble(p, A, P)
-      end
+    if p.y == 0 do
+      q
     else
-      H = U2 - U1
+      if q.y == 0 do
+        p
+      else
+        U1 =
+          (p.x * IntegerUtils.ipow(q.z, 2))
+          |> IntegerUtils.modulo(P)
 
-      R = S2 - S1
+        U2 =
+          (q.x * IntegerUtils.ipow(p.z, 2))
+          |> IntegerUtils.modulo(P)
 
-      H2 =
-        (H * H)
-        |> IntegerUtils.modulo(P)
+        S1 =
+          (p.y * IntegerUtils.ipow(q.z, 3))
+          |> IntegerUtils.modulo(P)
 
-      H3 =
-        (H * H2)
-        |> IntegerUtils.modulo(P)
+        S2 =
+          (q.y * IntegerUtils.ipow(p.z, 3))
+          |> IntegerUtils.modulo(P)
 
-      U1H2 =
-        (U1 * H2)
-        |> IntegerUtils.modulo(P)
+        if U1 == U2 do
+          if S1 != S2 do
+            %Point{x: 0, y: 0, z: 1}
+          else
+            jacobianDouble(p, A, P)
+          end
+        else
+          H = U2 - U1
 
-      nx =
-        (IntegerUtils.ipow(R, 2) - H3 - 2 * U1H2)
-        |> IntegerUtils.modulo(P)
+          R = S2 - S1
 
-      ny =
-        (R * (U1H2 - nx) - S1 * H3)
-        |> IntegerUtils.modulo(P)
+          H2 =
+            (H * H)
+            |> IntegerUtils.modulo(P)
 
-      nz =
-        (H * p.z * q.z)
-        |> IntegerUtils.modulo(P)
+          H3 =
+            (H * H2)
+            |> IntegerUtils.modulo(P)
 
-      %Point{x: nx, y: ny, z: nz}
+          U1H2 =
+            (U1 * H2)
+            |> IntegerUtils.modulo(P)
+
+          nx =
+            (IntegerUtils.ipow(R, 2) - H3 - 2 * U1H2)
+            |> IntegerUtils.modulo(P)
+
+          ny =
+            (R * (U1H2 - nx) - S1 * H3)
+            |> IntegerUtils.modulo(P)
+
+          nz =
+            (H * p.z * q.z)
+            |> IntegerUtils.modulo(P)
+
+          %Point{x: nx, y: ny, z: nz}
+        end
+      end
     end
   end
 
@@ -208,22 +208,22 @@ defmodule EllipticCurve.Utils.Math do
   # :param P: Prime number in the module of the equation Y^2 = X^3 + A*X + B (mod p)
   # :param A: Coefficient of the first-order term of the equation Y^2 = X^3 + A*X + B (mod p)
   # :return: Point that represents the sum of First and Second Point
-  defp jacobianMultiply(p, n, N, A, P) when p.y == 0 or n == 0 do
-    %Point{x: 0, y: 0, z: 1}
-  end
-
-  defp jacobianMultiply(p, n, N, A, P) when n == 1 do
-    p
-  end
-
   defp jacobianMultiply(p, n, N, A, P) when n < 0 or n >= N do
-    jacobianMultiply(
-      p,
-      IntegerUtils.modulo(n, N),
-      N,
-      A,
-      P
-    )
+    if p.y == 0 or n == 0 do
+      %Point{x: 0, y: 0, z: 1}
+    else
+      if n == 1 do
+        p
+      else
+        jacobianMultiply(
+          p,
+          IntegerUtils.modulo(n, N),
+          N,
+          A,
+          P
+        )
+      end
+    end
   end
 
   defp jacobianMultiply(p, n, N, A, P) when n < 0 or n >= N do

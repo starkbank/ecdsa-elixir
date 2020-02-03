@@ -57,7 +57,7 @@ defmodule EllipticCurve.PublicKey do
     )
   end
 
-  defp toString(publicKey, encoded: false) do
+  defp toString(publicKey, encoded) do
     curveLength = Curve.getLength(publicKey.curve)
 
     xString =
@@ -153,39 +153,39 @@ defmodule EllipticCurve.PublicKey do
       %EllipticCurve.PublicKey.Data{...}
   """
   def fromDer!(der) do
-    {s1, empty} = removeSequence(der)
+    {s1, empty} = Der.removeSequence(der)
 
-    if length(empty) != 0 do
+    if byte_size(empty) != 0 do
       raise "trailing junk after DER public key: #{BinaryAscii.hexFromBinary(empty)}"
     end
 
-    {s2, pointBitString} = removeSequence(s1)
+    {s2, pointBitString} = Der.removeSequence(s1)
 
-    {oidPublicKey, rest} = removeObject(s2)
+    {_oidPublicKey, rest} = Der.removeObject(s2)
 
-    {oidCurve, empty} = removeObject(rest)
+    {oidCurve, empty} = Der.removeObject(rest)
 
-    if length(empty) != 0 do
+    if byte_size(empty) != 0 do
       raise "trailing junk after DER public key objects: #{BinaryAscii.hexFromBinary(empty)}"
     end
 
-    curve = Curve.getCurveByOid(oidCurve)
+    curve = Curve.KnownCurves.getCurveByOid(oidCurve)
 
-    {pointString, empty} = removeBitString(pointBitString)
+    {pointString, empty} = Der.removeBitString(pointBitString)
 
-    if length(empty) != 0 do
+    if byte_size(empty) != 0 do
       raise "trailing junk after public key point-string: #{BinaryAscii.hexFromBinary(empty)}"
     end
 
-    fromString(String.slice(pointString, 2, length(pointString) - 2), curve)
+    fromString(String.slice(pointString, 2, byte_size(pointString) - 2), curve)
   end
 
-  defp fromString(string, curve: :secp256k1, validatePoint: true) do
-    curveData = Curve.getCurveByName(curve)
+  defp fromString(string, curve, validatePoint \\ true) do
+    curveData = Curve.KnownCurves.getCurveByName(curve)
     baseLength = Curve.getLength(curveData)
 
     xs = String.slice(string, 0, baseLength)
-    ys = String.slice(string, baseLength, String.length(string) - baseLength)
+    ys = String.slice(string, baseLength, byte_size(string))
 
     point = %Point{
       x: BinaryAscii.numberFromString(xs),
@@ -193,7 +193,7 @@ defmodule EllipticCurve.PublicKey do
     }
 
     if validatePoint and !curve.contains?(point) do
-      raise "point (#{x}, #{y}) is not valid for curve #{curveData.name}"
+      raise "point (#{point.x}, #{point.y}) is not valid for curve #{curveData.name}"
     end
 
     %Data{point: point, curve: curve}

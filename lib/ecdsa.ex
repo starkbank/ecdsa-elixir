@@ -7,7 +7,6 @@ defmodule EllipticCurve.Ecdsa do
   - verify?()
   """
 
-  alias EllipticCurve.{PrivateKey, PublicKey}
   alias EllipticCurve.Utils.{BinaryAscii, Math}
   alias EllipticCurve.Utils.Integer, as: IntegerUtils
   alias EllipticCurve.Signature.Data, as: Signature
@@ -29,7 +28,6 @@ defmodule EllipticCurve.Ecdsa do
       iex> EllipticCurve.Ecdsa.sign("my message", privateKey)
       {:ok, YXNvZGlqYW9pZGphb2lkamFvaWRqc2Fpb3NkamE=}
   """
-  @spec sign(string, EllipticCurve.PrivateKey.Data, options) :: EllipticCurve.Signature.Data
   def sign(message, privateKey, options \\ []) do
     %{hashfunc: hashfunc} = Enum.into(options, %{hashfunc: :sha256})
 
@@ -37,17 +35,17 @@ defmodule EllipticCurve.Ecdsa do
       :crypto.hash(hashfunc, message)
       |> BinaryAscii.numberFromString()
 
-    curve = privateKey.curve
+    curveData = privateKey.curve
 
-    randNum = IntegerUtils.between(1, curve.N - 1)
+    randNum = IntegerUtils.between(1, curveData."N" - 1)
 
     r =
-      Math.multiply(curve.G, randNum, curve.A, curve.P, curve.N).x
-      |> IntegerUtils.modulo(curve.N)
+      Math.multiply(curveData."G", randNum, curveData."A", curveData."P", curveData."N").x
+      |> IntegerUtils.modulo(curveData."N")
 
     s =
-      ((numberMessage + r * privateKey.secret) * Math.inv(randNum, curve.N))
-      |> IntegerUtils.modulo(curve.N)
+      ((numberMessage + r * privateKey.secret) * Math.inv(randNum, curveData."N"))
+      |> IntegerUtils.modulo(curveData."N")
 
     %Signature{r: r, s: s}
   end
@@ -76,8 +74,6 @@ defmodule EllipticCurve.Ecdsa do
       iex> EllipticCurve.Ecdsa.verify?(message, signature, wrongPublicKey)
       {:ok, false}
   """
-  @spec verify?(string, EllipticCurve.Signature.Data, EllipticCurve.PublicKey.Data, options) ::
-          bool
   def verify?(message, signature, publicKey, options \\ []) do
     %{hashfunc: hashfunc} = Enum.into(options, %{hashfunc: :sha256})
 
@@ -87,26 +83,26 @@ defmodule EllipticCurve.Ecdsa do
 
     curve = publicKey.curve
 
-    inv = Math.inv(signature.s, curve.N)
+    inv = Math.inv(signature.s, curve."N")
 
     signature.r ==
       Math.add(
         Math.multiply(
-          G,
-          IntegerUtils.modulo(numberMessage * inv, curve.N),
-          curve.A,
-          curve.P,
-          curve.N
+          curve."G",
+          IntegerUtils.modulo(numberMessage * inv, curve."N"),
+          curve."A",
+          curve."P",
+          curve."N"
         ),
         Math.multiply(
-          point,
-          IntegerUtils.modulo(signature.r * inv, curve.N),
-          curve.A,
-          curve.P,
-          curve.N
+          publicKey.point,
+          IntegerUtils.modulo(signature.r * inv, curve."N"),
+          curve."A",
+          curve."P",
+          curve."N"
         ),
-        curve.P,
-        curve.A
+        curve."P",
+        curve."A"
       ).x
   end
 end

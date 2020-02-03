@@ -16,7 +16,7 @@ defmodule EllipticCurve.PrivateKey do
   alias EllipticCurve.PrivateKey.{Data}
   alias EllipticCurve.PublicKey.Data, as: PublicKeyData
   alias EllipticCurve.Utils.Integer, as: IntegerUtils
-  alias EllipticCurve.Utils.{Der, Base64, BinaryAscii, Point}
+  alias EllipticCurve.Utils.{Der, BinaryAscii}
 
   @hexAt "\x00"
 
@@ -35,13 +35,13 @@ defmodule EllipticCurve.PrivateKey do
       iex> EllipticCurve.PrivateKey.generate()
       %EllipticCurve.PrivateKey.Data{...}
   """
-  def generate(secret: nil, curve: :secp256k1)
+  def generate(secret \\ nil, curve \\ :secp256k1)
 
   def generate(secret, curve) when is_nil(secret) do
     generate(
       IntegerUtils.between(
         1,
-        Curve.getCurveByName(:secp256k1).N - 1
+        Curve.KnownCurves.getCurveByName(curve)."N" - 1
       ),
       curve
     )
@@ -50,7 +50,7 @@ defmodule EllipticCurve.PrivateKey do
   def generate(secret, curve) do
     %Data{
       secret: secret,
-      curve: Curve.getCurveByName(:secp256k1)
+      curve: Curve.KnownCurves.getCurveByName(curve)
     }
   end
 
@@ -74,11 +74,11 @@ defmodule EllipticCurve.PrivateKey do
     %PublicKeyData{
       point:
         Math.multiply(
-          curveData.G,
+          curveData."G",
           privateKey.secret,
-          curveData.N,
-          curveData.A,
-          curveData.P
+          curveData."N",
+          curveData."A",
+          curveData."P"
         ),
       curve: curveData
     }
@@ -123,10 +123,10 @@ defmodule EllipticCurve.PrivateKey do
     Der.encodeSequence(
       Der.encodeInteger(1),
       Der.encodeOctetString(toString(privateKey)),
-      Der.encodeConstructed(0, encodeOid(privateKey.curve.oid)),
+      Der.encodeConstructed(0, Der.encodeOid(privateKey.curve.oid)),
       Der.encodeConstructed(
         1,
-        encodeBitString(PublicKey.toString(getPublicKey(privateKey), true))
+        Der.encodeBitString(PublicKey.toString(getPublicKey(privateKey), true))
       )
     )
   end
@@ -213,11 +213,11 @@ defmodule EllipticCurve.PrivateKey do
   def fromDer!(der) do
     {bytes1, empty} = Der.removeSequence(der)
 
-    if lenght(empty) != 0 do
+    if byte_size(empty) != 0 do
       raise "trailing junk after DER private key: #{BinaryAscii.hexFromBinary(empty)}"
     end
 
-    {one, bytes2} = removeInteger(bytes1)
+    {one, bytes2} = Der.removeInteger(bytes1)
 
     if one != 1 do
       raise "expected '1' at start of DER private key, got #{one}"
@@ -232,19 +232,19 @@ defmodule EllipticCurve.PrivateKey do
 
     {oidCurve, empty} = Der.removeObject(curveOidString)
 
-    if len(empty) != 0 do
+    if byte_size(empty) != 0 do
       raise "trailing junk after DER private key curve_oid: #{BinaryAscii.hexFromBinary(empty)}"
     end
 
-    privateKeyStringLength = String.length(privateKeyString)
-    curveData = Curve.getCurveByOid(oidCurve)
+    privateKeyStringLength = byte_size(privateKeyString)
+    curveData = Curve.KnownCurves.getCurveByOid(oidCurve)
     curveLength = Curve.getLength(curveData)
 
     if privateKeyStringLength < curveLength do
-      (String.duplicate(@hexAt, curveLength - privateKeyStringLength) <> privateKeyStr)
+      (String.duplicate(@hexAt, curveLength - privateKeyStringLength) <> privateKeyString)
       |> fromString(curveData)
     else
-      fromString(privateKeyStr, curveData)
+      fromString(privateKeyString, curveData)
     end
   end
 

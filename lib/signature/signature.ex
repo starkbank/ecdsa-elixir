@@ -89,16 +89,16 @@ defmodule EllipticCurve.Signature do
       %EllipticCurve.Signature.Data{r: 123, s: 456}
   """
   def fromDer!(der) do
-    {rs, firstEmpty} = Der.removeSequence(string)
+    {rs, firstEmpty} = Der.removeSequence(der)
 
-    if length(firstEmpty) > 0 do
+    if byte_size(firstEmpty) > 0 do
       raise "trailing junk after DER signature: " <> BinaryAscii.hexFromBinary(firstEmpty)
     end
 
     {r, rest} = Der.removeInteger(rs)
     {s, secondEmpty} = Der.removeInteger(rest)
 
-    if length(secondEmpty) > 0 do
+    if byte_size(secondEmpty) > 0 do
       raise "trailing junk after DER numbers: " <> BinaryAscii.hexFromBinary(secondEmpty)
     end
 
