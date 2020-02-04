@@ -158,7 +158,7 @@ defmodule EllipticCurve.Utils.Der do
     if byte_size(cleanLine) == 0 or String.starts_with?(cleanLine, "-----") do
       lines
     else
-      [line | lines]
+      [cleanLine | lines]
     end
   end
 
