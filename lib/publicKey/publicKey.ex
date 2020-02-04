@@ -30,7 +30,9 @@ defmodule EllipticCurve.PublicKey do
       {:ok, "YXNvZGlqYW9pZGphb2lkamFvaWRqc2Fpb3NkamE="}
   """
   def toPem(publicKey) do
-    Der.toPem(toDer(publicKey), "PUBLIC KEY")
+    publicKey
+    |> toDer()
+    |> Der.toPem("PUBLIC KEY")
   end
 
   @doc """
@@ -50,7 +52,7 @@ defmodule EllipticCurve.PublicKey do
   def toDer(publicKey) do
     Der.encodeSequence([
       Der.encodeSequence([
-        Der.encodeOid({1, 2, 840, 10045, 2, 1}),
+        Der.encodeOid([1, 2, 840, 10045, 2, 1]),
         Der.encodeOid(publicKey.curve.oid)
       ]),
       Der.encodeBitString(toString(publicKey, true))

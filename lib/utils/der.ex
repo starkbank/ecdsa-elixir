@@ -46,21 +46,21 @@ defmodule EllipticCurve.Utils.Der do
   end
 
   def encodeOid([first | [second | pieces]]) when first <= 2 and second <= 39 do
-    (<<40 * first + second>> <> to_string(for piece <- pieces, do: encodeNumber(piece)))
+    ([<<40 * first + second>>] ++ for(piece <- pieces, do: encodeNumber(piece)))
     |> Enum.join()
     |> (fn body -> @hexF <> encodeLength(byte_size(body)) <> body end).()
   end
 
   def encodeBitString(t) do
-    @hexC ++ encodeLength(byte_size(t)) ++ t
+    @hexC <> encodeLength(byte_size(t)) <> t
   end
 
   def encodeOctetString(t) do
-    @hexD ++ encodeLength(byte_size(t)) ++ t
+    @hexD <> encodeLength(byte_size(t)) <> t
   end
 
   def encodeConstructed(tag, value) do
-    [@hex129 + tag] ++ encodeLength(byte_size(value)) ++ value
+    <<@hex129 + tag>> <> encodeLength(byte_size(value)) <> value
   end
 
   def removeSequence(string) do
@@ -209,30 +209,27 @@ defmodule EllipticCurve.Utils.Der do
 
   def encodeNumber(n) do
     encodeNumberRecursive(n)
-    |> checkListLength()
-    |> to_string()
+    |> finishEncoding()
   end
 
   defp encodeNumberRecursive(n) when n > 0 do
-    recursive = encodeNumberRecursive(n >>> 7)
-
-    if length(recursive) == 0 do
-      [((n &&& @hex127) ||| @hex160) &&& @hex127]
-    else
-      recursive ++ [(n &&& @hex127) ||| @hex160]
-    end
+    encodeNumberRecursive(n >>> 7) <> <<(n &&& @hex127) ||| @hex160>>
   end
 
   defp encodeNumberRecursive(_n) do
-    []
+    <<>>
   end
 
-  defp checkListLength([]) do
-    [0]
+  defp finishEncoding(<<>>) do
+    <<0>>
   end
 
-  defp checkListLength(b128Digits) do
-    b128Digits
+  defp finishEncoding(<<first>> <> rest) when byte_size(rest) > 0 do
+    <<first>> <> finishEncoding(rest)
+  end
+
+  defp finishEncoding(<<lastDigit>>) do
+    <<lastDigit &&& @hex127>>
   end
 
   defp readNumber(string, number \\ 0, lengthLength \\ 0) do

@@ -50,6 +50,6 @@ defmodule EllipticCurve.Utils.BinaryAscii do
   end
 
   defp fillNumberString(string, stringLength) do
-    String.duplicate("0", 2 * stringLength - length(string)) <> string
+    String.duplicate("0", 2 * stringLength - byte_size(string)) <> string
   end
 end
