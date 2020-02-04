@@ -10,6 +10,7 @@ defmodule EllipticCurve.Utils.Der do
   @hexF "\x06"
   @hex0 "\x30"
 
+  @hex31 0x1F
   @hex127 0x7F
   @hex129 0xA0
   @hex160 0x80
@@ -63,13 +64,13 @@ defmodule EllipticCurve.Utils.Der do
   end
 
   def removeSequence(string) do
-    trimmedString = checkSequenceError(string, @hex0, "30")
+    trimmedString = checkSequenceError(string, @hex0)
 
     splitOnLength(trimmedString)
   end
 
   def removeInteger(string) do
-    trimmedString = checkSequenceError(string, @hexB, "02")
+    trimmedString = checkSequenceError(string, @hexB)
 
     {numberBytes, rest} = splitOnLength(trimmedString)
 
@@ -77,14 +78,20 @@ defmodule EllipticCurve.Utils.Der do
       throw("nBytes #{getFirstByte(numberBytes)} >= #{@hex160}")
     end
 
+    {parsed, ""} =
+      Integer.parse(
+        BinaryAscii.hexFromBinary(numberBytes),
+        16
+      )
+
     {
-      Integer.parse(BinaryAscii.hexFromBinary(numberBytes), 16),
+      parsed,
       rest
     }
   end
 
   def removeObject(string) do
-    trimmedString = checkSequenceError(string, @hexF, "06")
+    trimmedString = checkSequenceError(string, @hexF)
 
     {body, rest} = splitOnLength(trimmedString)
 
@@ -93,26 +100,31 @@ defmodule EllipticCurve.Utils.Der do
     first = div(n0, 40)
     second = n0 - 40 * first
 
-    {[first | [second | numbers]], rest}
+    {[first, second] ++ numbers, rest}
+  end
+
+  defp removeObjectRecursion(body) when byte_size(body) == 0 do
+    []
   end
 
   defp removeObjectRecursion(body) do
     {n, lengthLength} = readNumber(body)
 
     numbers =
-      removeObjectRecursion(binary_part(body, lengthLength, byte_size(body) - lengthLength))
+      binary_part(body, lengthLength, byte_size(body) - lengthLength)
+      |> removeObjectRecursion()
 
     [n | numbers]
   end
 
   def removeBitString(string) do
-    trimmedString = checkSequenceError(string, @hexC, "03")
+    trimmedString = checkSequenceError(string, @hexC)
 
     splitOnLength(trimmedString)
   end
 
   def removeOctetString(string) do
-    trimmedString = checkSequenceError(string, @hexD, "04")
+    trimmedString = checkSequenceError(string, @hexD)
 
     splitOnLength(trimmedString)
   end
@@ -122,7 +134,13 @@ defmodule EllipticCurve.Utils.Der do
       throw("wanted constructed tag (0xa0-0xbf), got #{Integer.to_string(s0, 16)}")
     end
 
-    splitOnLength(trimmedString)
+    {body, rest} = splitOnLength(trimmedString)
+
+    {
+      s0 &&& @hex31,
+      body,
+      rest
+    }
   end
 
   def fromPem(pem) do
@@ -218,18 +236,17 @@ defmodule EllipticCurve.Utils.Der do
   end
 
   defp readNumber(string, number \\ 0, lengthLength \\ 0) do
-    if lengthLength <= byte_size(string) do
+    if lengthLength > byte_size(string) do
       throw("ran out of length bytes")
     end
 
-    d = getFirstByte(binary_part(string, lengthLength, 1))
-
-    if d &&& @hex160 == 0 do
+    if lengthLength > 0 and
+         (getFirstByte(binary_part(string, lengthLength - 1, 1)) &&& @hex160) == 0 do
       {number, lengthLength}
     else
       readNumber(
         string,
-        number <<< (7 + (d &&& @hex127)),
+        (number <<< 7) + (getFirstByte(binary_part(string, lengthLength, 1)) &&& @hex127),
         lengthLength + 1
       )
     end
@@ -260,21 +277,22 @@ defmodule EllipticCurve.Utils.Der do
         throw("ran out of length bytes")
       end
 
-      {
+      {parsed, ""} =
         Integer.parse(
           BinaryAscii.hexFromBinary(binary_part(string, 1, lengthLength)),
           16
-        ),
+        )
+
+      {
+        parsed,
         1 + lengthLength
       }
     end
   end
 
-  defp checkSequenceError(<<first>> <> rest, start, expected) do
-    if first != start do
-      throw(
-        "wanted sequence #{Integer.to_string(expected, 16)}, got #{Integer.to_string(start, 16)}"
-      )
+  defp checkSequenceError(<<first>> <> rest, start) do
+    if <<first>> != start do
+      throw("wanted sequence #{Base.encode16(start)}, got #{Base.encode16(<<first>>)}")
     end
 
     rest

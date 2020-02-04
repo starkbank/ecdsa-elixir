@@ -173,7 +173,7 @@ defmodule EllipticCurve.PrivateKey do
     String.split(pem, "-----BEGIN EC PRIVATE KEY-----")
     |> List.last()
     |> Der.fromPem()
-    |> fromDer
+    |> fromDer!
   end
 
   @doc """
@@ -214,26 +214,26 @@ defmodule EllipticCurve.PrivateKey do
     {bytes1, empty} = Der.removeSequence(der)
 
     if byte_size(empty) != 0 do
-      raise "trailing junk after DER private key: #{BinaryAscii.hexFromBinary(empty)}"
+      throw("trailing junk after DER private key: #{BinaryAscii.hexFromBinary(empty)}")
     end
 
     {one, bytes2} = Der.removeInteger(bytes1)
 
     if one != 1 do
-      raise "expected '1' at start of DER private key, got #{one}"
+      throw("expected '1' at start of DER private key, got #{one}")
     end
 
     {privateKeyString, bytes3} = Der.removeOctetString(bytes2)
     {tag, curveOidString, _bytes4} = Der.removeConstructed(bytes3)
 
     if tag != 0 do
-      raise "expected tag 0 in DER private key, got #{tag}"
+      throw("expected tag 0 in DER private key, got #{tag}")
     end
 
     {oidCurve, empty} = Der.removeObject(curveOidString)
 
     if byte_size(empty) != 0 do
-      raise "trailing junk after DER private key curve_oid: #{BinaryAscii.hexFromBinary(empty)}"
+      throw("trailing junk after DER private key curve_oid: #{BinaryAscii.hexFromBinary(empty)}")
     end
 
     privateKeyStringLength = byte_size(privateKeyString)

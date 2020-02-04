@@ -40,7 +40,7 @@ defmodule EllipticCurve.Ecdsa do
     randNum = IntegerUtils.between(1, curveData."N" - 1)
 
     r =
-      Math.multiply(curveData."G", randNum, curveData."A", curveData."P", curveData."N").x
+      Math.multiply(curveData."G", randNum, curveData."N", curveData."A", curveData."P").x
       |> IntegerUtils.modulo(curveData."N")
 
     s =
@@ -90,19 +90,19 @@ defmodule EllipticCurve.Ecdsa do
         Math.multiply(
           curve."G",
           IntegerUtils.modulo(numberMessage * inv, curve."N"),
+          curve."N",
           curve."A",
-          curve."P",
-          curve."N"
+          curve."P"
         ),
         Math.multiply(
           publicKey.point,
           IntegerUtils.modulo(signature.r * inv, curve."N"),
+          curve."N",
           curve."A",
-          curve."P",
-          curve."N"
+          curve."P"
         ),
-        curve."P",
-        curve."A"
+        curve."A",
+        curve."P"
       ).x
   end
 end
