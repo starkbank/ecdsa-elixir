@@ -15,4 +15,17 @@ defmodule PublicKeyTest do
     assert publicKey1.point.y == publicKey2.point.y
     assert publicKey1.curve.name == publicKey2.curve.name
   end
+
+  test "der conversion" do
+    privateKey = PrivateKey.generate()
+    publicKey1 = PrivateKey.getPublicKey(privateKey)
+
+    der = PublicKey.toDer(publicKey1)
+
+    {:ok, publicKey2} = PublicKey.fromDer(der)
+
+    assert publicKey1.point.x == publicKey2.point.x
+    assert publicKey1.point.y == publicKey2.point.y
+    assert publicKey1.curve.name == publicKey2.curve.name
+  end
 end
