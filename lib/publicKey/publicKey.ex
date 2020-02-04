@@ -60,7 +60,7 @@ defmodule EllipticCurve.PublicKey do
   end
 
   @doc false
-  def toString(publicKey, encoded) do
+  def toString(publicKey, encoded \\ false) do
     curveLength = Curve.getLength(publicKey.curve)
 
     xString =
@@ -173,7 +173,7 @@ defmodule EllipticCurve.PublicKey do
       raise "trailing junk after DER public key objects: #{BinaryAscii.hexFromBinary(empty)}"
     end
 
-    curve = Curve.KnownCurves.getCurveByOid(oidCurve)
+    curveData = Curve.KnownCurves.getCurveByOid(oidCurve)
 
     {pointString, empty} = Der.removeBitString(pointBitString)
 
@@ -182,10 +182,17 @@ defmodule EllipticCurve.PublicKey do
     end
 
     binary_part(pointString, 2, byte_size(pointString) - 2)
-    |> fromString(curve)
+    |> fromString!(curveData.name)
   end
 
-  defp fromString(string, curveData, validatePoint \\ true) do
+  def fromString(string, curve \\ :secp256k1, validatePoint \\ true) do
+    {:ok, fromString!(string, curve, validatePoint)}
+  rescue
+    e in RuntimeError -> {:error, e}
+  end
+
+  def fromString!(string, curve \\ :secp256k1, validatePoint \\ true) do
+    curveData = Curve.KnownCurves.getCurveByName(curve)
     baseLength = Curve.getLength(curveData)
 
     xs = binary_part(string, 0, baseLength)

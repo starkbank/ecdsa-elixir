@@ -28,4 +28,17 @@ defmodule PublicKeyTest do
     assert publicKey1.point.y == publicKey2.point.y
     assert publicKey1.curve.name == publicKey2.curve.name
   end
+
+  test "string conversion" do
+    privateKey = PrivateKey.generate()
+    publicKey1 = PrivateKey.getPublicKey(privateKey)
+
+    string = PublicKey.toString(publicKey1)
+
+    {:ok, publicKey2} = PublicKey.fromString(string)
+
+    assert publicKey1.point.x == publicKey2.point.x
+    assert publicKey1.point.y == publicKey2.point.y
+    assert publicKey1.curve.name == publicKey2.curve.name
+  end
 end
