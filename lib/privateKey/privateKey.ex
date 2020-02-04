@@ -131,7 +131,7 @@ defmodule EllipticCurve.PrivateKey do
     ])
   end
 
-  defp toString(privateKey) do
+  def toString(privateKey) do
     BinaryAscii.stringFromNumber(privateKey.secret, Curve.getLength(privateKey.curve))
   end
 
@@ -244,14 +244,20 @@ defmodule EllipticCurve.PrivateKey do
       (String.duplicate(@hexAt, curveLength - privateKeyStringLength) <> privateKeyString)
       |> fromString(curveData)
     else
-      fromString(privateKeyString, curveData)
+      fromString!(privateKeyString, curveData.name)
     end
   end
 
-  defp fromString(string, curveData) do
+  def fromString(string, curve \\ :secp256k1) do
+    {:ok, fromString!(string, curve)}
+  rescue
+    e in RuntimeError -> {:error, e}
+  end
+
+  def fromString!(string, curve \\ :secp256k1) do
     %Data{
       secret: BinaryAscii.numberFromString(string),
-      curve: curveData
+      curve: Curve.KnownCurves.getCurveByName(curve)
     }
   end
 end

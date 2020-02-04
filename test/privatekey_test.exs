@@ -24,4 +24,15 @@ defmodule PrivateKeyTest do
     assert privateKey1.secret == privateKey2.secret
     assert privateKey1.curve == privateKey2.curve
   end
+
+  test "string conversion" do
+    privateKey1 = PrivateKey.generate()
+
+    string = PrivateKey.toString(privateKey1)
+
+    {:ok, privateKey2} = PrivateKey.fromString(string)
+
+    assert privateKey1.secret == privateKey2.secret
+    assert privateKey1.curve == privateKey2.curve
+  end
 end
