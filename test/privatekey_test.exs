@@ -13,4 +13,15 @@ defmodule PrivateKeyTest do
     assert privateKey1.secret == privateKey2.secret
     assert privateKey1.curve == privateKey2.curve
   end
+
+  test "der conversion" do
+    privateKey1 = PrivateKey.generate()
+
+    der = PrivateKey.toDer(privateKey1)
+
+    {:ok, privateKey2} = PrivateKey.fromDer(der)
+
+    assert privateKey1.secret == privateKey2.secret
+    assert privateKey1.curve == privateKey2.curve
+  end
 end
