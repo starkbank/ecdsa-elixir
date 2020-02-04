@@ -81,28 +81,28 @@ defmodule EllipticCurve.Ecdsa do
       :crypto.hash(hashfunc, message)
       |> BinaryAscii.numberFromString()
 
-    curve = publicKey.curve
+    curveData = publicKey.curve
 
-    inv = Math.inv(signature.s, curve."N")
+    inv = Math.inv(signature.s, curveData."N")
 
     signature.r ==
       Math.add(
         Math.multiply(
-          curve."G",
-          IntegerUtils.modulo(numberMessage * inv, curve."N"),
-          curve."N",
-          curve."A",
-          curve."P"
+          curveData."G",
+          IntegerUtils.modulo(numberMessage * inv, curveData."N"),
+          curveData."N",
+          curveData."A",
+          curveData."P"
         ),
         Math.multiply(
           publicKey.point,
-          IntegerUtils.modulo(signature.r * inv, curve."N"),
-          curve."N",
-          curve."A",
-          curve."P"
+          IntegerUtils.modulo(signature.r * inv, curveData."N"),
+          curveData."N",
+          curveData."A",
+          curveData."P"
         ),
-        curve."A",
-        curve."P"
+        curveData."A",
+        curveData."P"
       ).x
   end
 end

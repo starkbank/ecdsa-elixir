@@ -49,9 +49,7 @@ defmodule EllipticCurve.Utils.Integer do
 
     randomNumber =
       :crypto.strong_rand_bytes(bytesNeeded)
-      # |> IO.inspect()
       |> :binary.bin_to_list()
-      # |> IO.inspect()
       |> bytesToNumber &&& mask
 
     if randomNumber < range do

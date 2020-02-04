@@ -115,8 +115,9 @@ defmodule EllipticCurve.PublicKey do
       %EllipticCurve.PublicKey.Data{...}
   """
   def fromPem!(pem) do
-    Der.fromPem(pem)
-    |> fromDer()
+    pem
+    |> Der.fromPem()
+    |> fromDer!()
   end
 
   @doc """
@@ -178,25 +179,25 @@ defmodule EllipticCurve.PublicKey do
       raise "trailing junk after public key point-string: #{BinaryAscii.hexFromBinary(empty)}"
     end
 
-    fromString(String.slice(pointString, 2, byte_size(pointString) - 2), curve)
+    binary_part(pointString, 2, byte_size(pointString) - 2)
+    |> fromString(curve)
   end
 
-  defp fromString(string, curve, validatePoint \\ true) do
-    curveData = Curve.KnownCurves.getCurveByName(curve)
+  defp fromString(string, curveData, validatePoint \\ true) do
     baseLength = Curve.getLength(curveData)
 
-    xs = String.slice(string, 0, baseLength)
-    ys = String.slice(string, baseLength, byte_size(string))
+    xs = binary_part(string, 0, baseLength)
+    ys = binary_part(string, baseLength, byte_size(string) - baseLength)
 
     point = %Point{
       x: BinaryAscii.numberFromString(xs),
       y: BinaryAscii.numberFromString(ys)
     }
 
-    if validatePoint and !curve.contains?(point) do
-      raise "point (#{point.x}, #{point.y}) is not valid for curve #{curveData.name}"
+    if validatePoint and !Curve.contains?(curveData, point) do
+      throw("point (#{point.x}, #{point.y}) is not valid for curve #{curveData.name}")
     end
 
-    %Data{point: point, curve: curve}
+    %Data{point: point, curve: curveData}
   end
 end
