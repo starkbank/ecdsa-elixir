@@ -29,7 +29,7 @@ defmodule EllipticCurve.Signature do
       {:ok, %EllipticCurve.Signature.Data{r: 123, s: 456}}
   """
   def fromBase64(base64) do
-    {:ok, fromBase64(base64)}
+    {:ok, fromBase64!(base64)}
   rescue
     e in RuntimeError -> {:error, e}
   end
@@ -51,7 +51,7 @@ defmodule EllipticCurve.Signature do
   def fromBase64!(base64String) do
     base64String
     |> Base64.decode()
-    |> fromDer()
+    |> fromDer!()
   end
 
   @doc """

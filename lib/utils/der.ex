@@ -20,7 +20,7 @@ defmodule EllipticCurve.Utils.Der do
 
   def encodeSequence(encodedPieces) do
     Enum.sum(for piece <- encodedPieces, do: byte_size(piece))
-    |> (fn totalLength -> @hex0 <> encodeLength(totalLength) <> Enum.join(encodedPieces) end).()
+    |> (fn totalLength -> <<@hex0>> <> encodeLength(totalLength) <> Enum.join(encodedPieces) end).()
   end
 
   def encodeInteger(x) when x >= 0 do
@@ -31,9 +31,9 @@ defmodule EllipticCurve.Utils.Der do
       |> BinaryAscii.binaryFromHex()
 
     if getFirstByte(bin) <= @hex127 do
-      @hexB <> <<byte_size(x)>> <> x
+      @hexB <> <<byte_size(bin)>> <> bin
     else
-      @hexB <> <<byte_size(x) + 1>> <> @hexAt <> x
+      @hexB <> <<byte_size(bin) + 1>> <> @hexAt <> bin
     end
   end
 
@@ -188,7 +188,7 @@ defmodule EllipticCurve.Utils.Der do
   end
 
   def encodeLength(lengthValue) when lengthValue > 0 and lengthValue < @hex160 do
-    lengthValue
+    <<lengthValue>>
   end
 
   def encodeLength(lengthValue) when lengthValue > 0 do
