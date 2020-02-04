@@ -1,6 +1,6 @@
 defmodule EllipticCurve.PrivateKey do
   @moduledoc """
-  Used to convert private key between struct and der or pem formats
+  Used to create private keys or convert them between struct and .der or .pem formats. Also allows creations of public keys from private keys.
 
   Functions:
   - generate()
@@ -24,11 +24,11 @@ defmodule EllipticCurve.PrivateKey do
   Creates a new private key
 
   Parameters:
-  - secret [int]: private key secret (default nil: random key will be generated)
-  - curve [atom]: curve name (default :secp256k1)
+  - secret [int]: private key secret; Default: nil -> random key will be generated;
+  - curve [atom]: curve name; Default: :secp256k1;
 
-  Returns {:ok, privateKey}:
-  - privateKey [EllipticCurve.PrivateKey.Data]: private key struct
+  Returns:
+  - privateKey [%EllipticCurve.PrivateKey.Data]: private key struct
 
   ## Example:
 
@@ -58,10 +58,10 @@ defmodule EllipticCurve.PrivateKey do
   Gets the public associated with a private key
 
   Parameters:
-  - privateKey [int]: private key secret (default nil: random key will be generated)
+  - privateKey [%EllipticCurve.PrivateKey.Data]: private key struct
 
-  Returns {:ok, publicKey}:
-  - publicKey [EllipticCurve.PublicKey.Data]: public key struct
+  Returns:
+  - publicKey [%EllipticCurve.PublicKey.Data]: public key struct
 
   ## Example:
 
@@ -88,15 +88,15 @@ defmodule EllipticCurve.PrivateKey do
   Converts a private key in decoded struct format into a pem string
 
   Parameters:
-  - privateKey [EllipticCurve.PrivateKey.Data]: decoded private key struct;
+  - privateKey [%EllipticCurve.PrivateKey.Data]: decoded private key struct;
 
-  Returns {:ok, pem}:
+  Returns:
   - pem [string]: private key in pem format
 
   ## Example:
 
       iex> EllipticCurve.PrivateKey.toPem(%EllipticCurve.PrivateKey.Data{...})
-      {:ok, "YXNvZGlqYW9pZGphb2lkamFvaWRqc2Fpb3NkamE="}
+      "-----BEGIN EC PRIVATE KEY-----\nMHQCAQEEIDvS/RddF6iYa/q4oVSrGa3Kbd7aSooNpwhv9puJVv1loAcGBSuBBAAK\noUQDQgAErp2I78X4cqHscCRWMT4rhouyO197iQXRfdGgsgfS/UGaIviYiqnG3SSa\n9dsOHU/NkVSTLkBPCI0RQLF3554dZg==\n-----END EC PRIVATE KEY-----\n"
   """
   def toPem(privateKey) do
     Der.toPem(
@@ -109,15 +109,15 @@ defmodule EllipticCurve.PrivateKey do
   Converts a private key in decoded struct format into a der string (raw binary)
 
   Parameters:
-  - privateKey [EllipticCurve.PrivateKey.Data]: decoded private key struct;
+  - privateKey [$EllipticCurve.PrivateKey.Data]: decoded private key struct;
 
-  Returns {:ok, der}:
+  Returns:
   - der [string]: private key in der format
 
   ## Example:
 
       iex> EllipticCurve.PrivateKey.toDer(%EllipticCurve.PrivateKey.Data{...})
-      {:ok, "    ó^ad  12 "}
+      <<48, 116, 2, 1, 1, 4, 32, 59, 210, 253, 23, 93, 23, ...>>
   """
   def toDer(privateKey) do
     Der.encodeSequence([
@@ -131,6 +131,7 @@ defmodule EllipticCurve.PrivateKey do
     ])
   end
 
+  @doc false
   def toString(privateKey) do
     BinaryAscii.stringFromNumber(privateKey.secret, Curve.getLength(privateKey.curve))
   end
@@ -141,12 +142,12 @@ defmodule EllipticCurve.PrivateKey do
   Parameters:
   - pem [string]: private key in pem format
 
-  Returns {:ok, der}:
-  - privateKey [EllipticCurve.PrivateKey.Data]: decoded private key struct;
+  Returns {:ok, privateKey}:
+  - privateKey [%EllipticCurve.PrivateKey.Data]: decoded private key struct;
 
   ## Example:
 
-      iex> EllipticCurve.PrivateKey.fromPem("YXNvZGlqYW9pZGphb2lkamFvaWRqc2Fpb3NkamE=")
+      iex> EllipticCurve.PrivateKey.fromPem("-----BEGIN EC PRIVATE KEY-----\nMHQCAQEEIDvS/RddF6iYa/q4oVSrGa3Kbd7aSooNpwhv9puJVv1loAcGBSuBBAAK\noUQDQgAErp2I78X4cqHscCRWMT4rhouyO197iQXRfdGgsgfS/UGaIviYiqnG3SSa\n9dsOHU/NkVSTLkBPCI0RQLF3554dZg==\n-----END EC PRIVATE KEY-----\n")
       {:ok, %EllipticCurve.PrivateKey.Data{...}}
   """
   def fromPem(pem) do
@@ -161,12 +162,12 @@ defmodule EllipticCurve.PrivateKey do
   Parameters:
   - pem [string]: private key in pem format
 
-  Returns {:ok, der}:
-  - privateKey [EllipticCurve.PrivateKey.Data]: decoded private key struct;
+  Returns:
+  - privateKey [%EllipticCurve.PrivateKey.Data]: decoded private key struct;
 
   ## Example:
 
-      iex> EllipticCurve.PrivateKey.fromPem!("YXNvZGlqYW9pZGphb2lkamFvaWRqc2Fpb3NkamE=")
+      iex> EllipticCurve.PrivateKey.fromPem!("-----BEGIN EC PRIVATE KEY-----\nMHQCAQEEIDvS/RddF6iYa/q4oVSrGa3Kbd7aSooNpwhv9puJVv1loAcGBSuBBAAK\noUQDQgAErp2I78X4cqHscCRWMT4rhouyO197iQXRfdGgsgfS/UGaIviYiqnG3SSa\n9dsOHU/NkVSTLkBPCI0RQLF3554dZg==\n-----END EC PRIVATE KEY-----\n")
       %EllipticCurve.PrivateKey.Data{...}
   """
   def fromPem!(pem) do
@@ -182,12 +183,12 @@ defmodule EllipticCurve.PrivateKey do
   Parameters:
   - der [string]: private key in der format
 
-  Returns {:ok, der}:
-  - privateKey [EllipticCurve.PrivateKey.Data]: decoded private key struct;
+  Returns {:ok, privateKey}:
+  - privateKey [%EllipticCurve.PrivateKey.Data]: decoded private key struct;
 
   ## Example:
 
-      iex> EllipticCurve.PrivateKey.fromDer("    óa das 1 ")
+      iex> EllipticCurve.PrivateKey.fromDer(<<48, 116, 2, 1, 1, 4, 32, 59, 210, 253, 23, 93, 23, ...>>)
       {:ok, %EllipticCurve.PrivateKey.Data{...}}
   """
   def fromDer(der) do
@@ -202,12 +203,12 @@ defmodule EllipticCurve.PrivateKey do
   Parameters:
   - der [string]: private key in der format
 
-  Returns {:ok, der}:
-  - privateKey [EllipticCurve.PrivateKey.Data]: decoded private key struct;
+  Returns:
+  - privateKey [%EllipticCurve.PrivateKey.Data]: decoded private key struct;
 
   ## Example:
 
-      iex> EllipticCurve.PrivateKey.fromDer!("    óa das 1 ")
+      iex> EllipticCurve.PrivateKey.fromDer!(<<48, 116, 2, 1, 1, 4, 32, 59, 210, 253, 23, 93, 23, ...>>)
       %EllipticCurve.PrivateKey.Data{...}
   """
   def fromDer!(der) do
@@ -248,12 +249,14 @@ defmodule EllipticCurve.PrivateKey do
     end
   end
 
+  @doc false
   def fromString(string, curve \\ :secp256k1) do
     {:ok, fromString!(string, curve)}
   rescue
     e in RuntimeError -> {:error, e}
   end
 
+  @doc false
   def fromString!(string, curve \\ :secp256k1) do
     %Data{
       secret: BinaryAscii.numberFromString(string),

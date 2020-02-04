@@ -1,6 +1,6 @@
 defmodule EllipticCurve.PublicKey do
   @moduledoc """
-  Used to convert public keys between struct and der or pem formats
+  Used to convert public keys between struct and .der or .pem formats.
 
   Functions:
   - toPem()
@@ -19,15 +19,15 @@ defmodule EllipticCurve.PublicKey do
   Converts a public key in decoded struct format into a pem string
 
   Parameters:
-  - publicKey [EllipticCurve.PublicKey.Data]: decoded public key struct;
+  - publicKey [%EllipticCurve.PublicKey.Data]: decoded public key struct;
 
-  Returns {:ok, pem}:
+  Returns:
   - pem [string]: public key in pem format
 
   ## Example:
 
       iex> EllipticCurve.PublicKey.toPem(%EllipticCurve.PublicKey.Data{...})
-      {:ok, "YXNvZGlqYW9pZGphb2lkamFvaWRqc2Fpb3NkamE="}
+      "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAErp2I78X4cqHscCRWMT4rhouyO197iQXR\nfdGgsgfS/UGaIviYiqnG3SSa9dsOHU/NkVSTLkBPCI0RQLF3554dZg==\n-----END PUBLIC KEY-----\n"
   """
   def toPem(publicKey) do
     publicKey
@@ -39,15 +39,15 @@ defmodule EllipticCurve.PublicKey do
   Converts a public key in decoded struct format into a der string (raw binary)
 
   Parameters:
-  - publicKey [EllipticCurve.PublicKey.Data]: decoded public key struct;
+  - publicKey [%EllipticCurve.PublicKey.Data]: decoded public key struct;
 
-  Returns {:ok, der}:
+  Returns:
   - der [string]: public key in der format
 
   ## Example:
 
       iex> EllipticCurve.PublicKey.toDer(%EllipticCurve.PublicKey.Data{...})
-      {:ok, "  1 ó~  ia "}
+      <<48, 86, 48, 16, 6, 7, 42, 134, 72, 206, 61, ...>>
   """
   def toDer(publicKey) do
     Der.encodeSequence([
@@ -88,12 +88,12 @@ defmodule EllipticCurve.PublicKey do
   Parameters:
   - pem [string]: public key in pem format
 
-  Returns {:ok, der}:
-  - publicKey [EllipticCurve.PublicKey.Data]: decoded public key struct;
+  Returns {:ok, publicKey}:
+  - publicKey [%EllipticCurve.PublicKey.Data]: decoded public key struct;
 
   ## Example:
 
-      iex> EllipticCurve.PublicKey.fromPem("YXNvZGlqYW9pZGphb2lkamFvaWRqc2Fpb3NkamE=")
+      iex> EllipticCurve.PublicKey.fromPem("-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAErp2I78X4cqHscCRWMT4rhouyO197iQXR\nfdGgsgfS/UGaIviYiqnG3SSa9dsOHU/NkVSTLkBPCI0RQLF3554dZg==\n-----END PUBLIC KEY-----\n")
       {:ok, %EllipticCurve.PublicKey.Data{...}}
   """
   def fromPem(pem) do
@@ -108,12 +108,12 @@ defmodule EllipticCurve.PublicKey do
   Parameters:
   - pem [string]: public key in pem format
 
-  Returns {:ok, der}:
-  - publicKey [EllipticCurve.PublicKey.Data]: decoded public key struct;
+  Returns:
+  - publicKey [%EllipticCurve.PublicKey.Data]: decoded public key struct;
 
   ## Example:
 
-      iex> EllipticCurve.PublicKey.fromPem!("YXNvZGlqYW9pZGphb2lkamFvaWRqc2Fpb3NkamE=")
+      iex> EllipticCurve.PublicKey.fromPem!("-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAErp2I78X4cqHscCRWMT4rhouyO197iQXR\nfdGgsgfS/UGaIviYiqnG3SSa9dsOHU/NkVSTLkBPCI0RQLF3554dZg==\n-----END PUBLIC KEY-----\n")
       %EllipticCurve.PublicKey.Data{...}
   """
   def fromPem!(pem) do
@@ -128,12 +128,12 @@ defmodule EllipticCurve.PublicKey do
   Parameters:
   - der [string]: public key in der format
 
-  Returns {:ok, der}:
-  - publicKey [EllipticCurve.PublicKey.Data]: decoded public key struct;
+  Returns {:ok, publicKey}:
+  - publicKey [%EllipticCurve.PublicKey.Data]: decoded public key struct;
 
   ## Example:
 
-      iex> EllipticCurve.PublicKey.fromDer("  1 ó~  ia ")
+      iex> EllipticCurve.PublicKey.fromDer(<<48, 86, 48, 16, 6, 7, 42, 134, ...>>)
       {:ok, %EllipticCurve.PublicKey.Data{...}}
   """
   def fromDer(der) do
@@ -148,12 +148,12 @@ defmodule EllipticCurve.PublicKey do
   Parameters:
   - der [string]: public key in der format
 
-  Returns {:ok, der}:
-  - publicKey [EllipticCurve.PublicKey.Data]: decoded public key struct;
+  Returns:
+  - publicKey [%EllipticCurve.PublicKey.Data]: decoded public key struct;
 
   ## Example:
 
-      iex> EllipticCurve.PublicKey.fromDer!("  1 ó~  ia ")
+      iex> EllipticCurve.PublicKey.fromDer!(<<48, 86, 48, 16, 6, 7, 42, 134, ...>>)
       %EllipticCurve.PublicKey.Data{...}
   """
   def fromDer!(der) do
@@ -185,12 +185,14 @@ defmodule EllipticCurve.PublicKey do
     |> fromString!(curveData.name)
   end
 
+  @doc false
   def fromString(string, curve \\ :secp256k1, validatePoint \\ true) do
     {:ok, fromString!(string, curve, validatePoint)}
   rescue
     e in RuntimeError -> {:error, e}
   end
 
+  @doc false
   def fromString!(string, curve \\ :secp256k1, validatePoint \\ true) do
     curveData = Curve.KnownCurves.getCurveByName(curve)
     baseLength = Curve.getLength(curveData)

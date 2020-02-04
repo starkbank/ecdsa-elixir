@@ -1,6 +1,6 @@
 defmodule EllipticCurve.Ecdsa do
   @moduledoc """
-  Used to sign and verify signatures using the Elliptic Curve Digital Signature Algorithm
+  Used to sign and verify signatures using the Elliptic Curve Digital Signature Algorithm (ECDSA)
 
   Functions:
   - sign()
@@ -16,9 +16,9 @@ defmodule EllipticCurve.Ecdsa do
 
   Parameters:
   - message [string]: message that will be signed
-  - privateKey [private key secret integer]: private key associated with the signer
+  - privateKey [%EllipticCurve.PrivateKey.Data]: private key data associated with the signer
   - options [keyword list]: refines request
-    - hashfunc [:method]: defines the hash function applied to the message. Must be compatible with :crypto.hash;
+    - hashfunc [:method]: defines the hash function applied to the message. Must be compatible with :crypto.hash. Default: :sha256;
 
   Returns signature:
   - signature [string]: base-64 message signature;
@@ -26,7 +26,7 @@ defmodule EllipticCurve.Ecdsa do
   ## Example:
 
       iex> EllipticCurve.Ecdsa.sign("my message", privateKey)
-      {:ok, YXNvZGlqYW9pZGphb2lkamFvaWRqc2Fpb3NkamE=}
+      "MEQCIFp2TrQ6RlThbEOeYin2t+Dz3TAebeK/kinZaU0Iltm4AiBXyvyCTwgjOBo5eZNssw/3shTqn8eHZyoRiToSttrRFw=="
   """
   def sign(message, privateKey, options \\ []) do
     %{hashfunc: hashfunc} = Enum.into(options, %{hashfunc: :sha256})
@@ -55,10 +55,10 @@ defmodule EllipticCurve.Ecdsa do
 
   Parameters:
   - message [string]: message that will be signed
-  - signature [base64 string]: signature associated with the message
-  - publicKey [public key secret integer]: public key associated with the message signer
+  - signature [%EllipticCurve.Signature.Data]: signature associated with the message
+  - publicKey [%EllipticCurve.PublicKey.Data]: public key associated with the message signer
   - options [keyword list]: refines request
-    - hashfunc [:method]: defines the hash function applied to the message. Must be compatible with :crypto.hash;
+    - hashfunc [:method]: defines the hash function applied to the message. Must be compatible with :crypto.hash. Default: :sha256;
 
   Returns:
   - verified [bool]: true if message, public key and signature are compatible, false otherwise;
@@ -66,13 +66,13 @@ defmodule EllipticCurve.Ecdsa do
   ## Example:
 
       iex> EllipticCurve.Ecdsa.verify?(message, signature, publicKey)
-      {:ok, true}
+      true
       iex> EllipticCurve.Ecdsa.verify?(wrongMessage, signature, publicKey)
-      {:ok, false}
+      false
       iex> EllipticCurve.Ecdsa.verify?(message, wrongSignature, publicKey)
-      {:ok, false}
+      false
       iex> EllipticCurve.Ecdsa.verify?(message, signature, wrongPublicKey)
-      {:ok, false}
+      false
   """
   def verify?(message, signature, publicKey, options \\ []) do
     %{hashfunc: hashfunc} = Enum.into(options, %{hashfunc: :sha256})
