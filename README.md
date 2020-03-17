@@ -11,7 +11,7 @@ To install [Stark Bank]\`s ECDSA-Elixir, add `starkbank_ecdsa` to your list of d
 ```elixir
 def deps do
   [
-    {:stark_bank, "~> 0.0.1"}
+    {:starkbank_ecdsa, "~> 0.0.1"}
   ]
 end
 ```
@@ -27,7 +27,7 @@ We ran a test on a MAC Pro i7 2017. The libraries were run 100 times and the ave
 | Library            | sign          | verify  |
 | ------------------ |:-------------:| -------:|
 | [crypto]           |     1.0ms     |  2.0ms  |
-| starkbank-ecdsa    |     1.9ms     |  3.8ms  |
+| starkbank_ecdsa    |     1.9ms     |  3.8ms  |
 
 ### Sample Code
 
