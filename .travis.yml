@@ -1,0 +1,13 @@
+dist: trusty
+
+language: elixir
+
+matrix:
+  include:
+    - elixir: '1.9.0'
+      otp_release: '20.0'
+    - elixir: '1.10.0'
+      otp_release: '21.0'
+
+script:
+  - mix test --trace

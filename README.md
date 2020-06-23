@@ -2,7 +2,7 @@
 
 ### Overview
 
-This is an Elixir translation of [Stark Bank]\`s ecdsa-python. It is compatible with OpenSSL and uses elegant math such as Jacobian Coordinates to speed up the ECDSA on pure Elixir.
+This is an Elixir 1.9+ translation of [Stark Bank]\`s ecdsa-python. It is compatible with OpenSSL and uses elegant math such as Jacobian Coordinates to speed up the ECDSA on pure Elixir.
 
 ### Installation
 
