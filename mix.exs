@@ -5,7 +5,7 @@ defmodule Ellipticcurve.MixProject do
     [
       app: :starkbank_ecdsa,
       name: :starkbank_ecdsa,
-      version: "1.0.0",
+      version: "1.0.1",
       homepage_url: "https://starkbank.com",
       source_url: "https://github.com/starkbank/ecdsa-elixir",
       description: description(),
