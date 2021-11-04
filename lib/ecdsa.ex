@@ -85,7 +85,7 @@ defmodule EllipticCurve.Ecdsa do
 
     inv = Math.inv(signature.s, curveData."N")
 
-    signature.r ==
+    result = signature.r ==
       Math.add(
         Math.multiply(
           curveData."G",
@@ -104,5 +104,11 @@ defmodule EllipticCurve.Ecdsa do
         curveData."A",
         curveData."P"
       ).x
+
+    cond do
+      signature.r < 1 || signature.r >= curveData."N" -> false
+      signature.s < 1 || signature.s >= curveData."N" -> false
+      true -> result
+    end
   end
 end
