@@ -1,4 +1,4 @@
-defmodule EllipticCurve.Utils.Point do
+defmodule EllipticCurve.Utils.Point.Data do
   @doc """
   Holds point data. Is usually handled internally by the library and serves only as detailed information to the end-user.
 

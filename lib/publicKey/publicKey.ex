@@ -11,7 +11,9 @@ defmodule EllipticCurve.PublicKey do
   - fromDer!()
   """
 
-  alias EllipticCurve.Utils.{Der, BinaryAscii, Point}
+  alias EllipticCurve.Utils.{Der, BinaryAscii, Math}
+  alias EllipticCurve.Utils.Point
+  alias EllipticCurve.Utils.Point.Data, as: PointData
   alias EllipticCurve.{Curve}
   alias EllipticCurve.PublicKey.{Data}
 
@@ -200,15 +202,22 @@ defmodule EllipticCurve.PublicKey do
     xs = binary_part(string, 0, baseLength)
     ys = binary_part(string, baseLength, byte_size(string) - baseLength)
 
-    point = %Point{
+    point = %PointData{
       x: BinaryAscii.numberFromString(xs),
       y: BinaryAscii.numberFromString(ys)
     }
+    
+    publicKey = %Data{point: point, curve: curveData}
 
-    if validatePoint and !Curve.contains?(curveData, point) do
-      throw("point (#{point.x}, #{point.y}) is not valid for curve #{curveData.name}")
+    cond do
+      validatePoint == false -> publicKey
+      Point.isAtInfinity?(point) -> 
+        raise "Public Key point is at infinity"
+      Curve.contains?(curveData, point) == false -> 
+        raise "Point (#{point.x},#{point.y}) is not valid for curve #{curveData.name}"
+      Point.isAtInfinity?(Math.multiply(point, curveData."N", curveData."N", curveData."A", curveData."P")) == false ->
+        raise "Point (#{point.x},#{point.y}) * #{curveData.name}.N is not at infinity"
+      true -> publicKey
     end
-
-    %Data{point: point, curve: curveData}
   end
 end

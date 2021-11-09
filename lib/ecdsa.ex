@@ -8,6 +8,7 @@ defmodule EllipticCurve.Ecdsa do
   """
 
   alias EllipticCurve.Utils.{BinaryAscii, Math}
+  alias EllipticCurve.Utils.Point
   alias EllipticCurve.Utils.Integer, as: IntegerUtils
   alias EllipticCurve.Signature.Data, as: Signature
 
@@ -85,30 +86,30 @@ defmodule EllipticCurve.Ecdsa do
 
     inv = Math.inv(signature.s, curveData."N")
 
-    result = signature.r ==
-      Math.add(
-        Math.multiply(
-          curveData."G",
-          IntegerUtils.modulo(numberMessage * inv, curveData."N"),
-          curveData."N",
-          curveData."A",
-          curveData."P"
-        ),
-        Math.multiply(
-          publicKey.point,
-          IntegerUtils.modulo(signature.r * inv, curveData."N"),
-          curveData."N",
-          curveData."A",
-          curveData."P"
-        ),
+    v = Math.add(
+      Math.multiply(
+        curveData."G",
+        IntegerUtils.modulo(numberMessage * inv, curveData."N"),
+        curveData."N",
         curveData."A",
         curveData."P"
-      ).x
+      ),
+      Math.multiply(
+        publicKey.point,
+        IntegerUtils.modulo(signature.r * inv, curveData."N"),
+        curveData."N",
+        curveData."A",
+        curveData."P"
+      ),
+      curveData."A",
+      curveData."P"
+    )
 
     cond do
       signature.r < 1 || signature.r >= curveData."N" -> false
       signature.s < 1 || signature.s >= curveData."N" -> false
-      true -> result
+      Point.isAtInfinity?(v) -> false
+      true -> IntegerUtils.modulo(v.x, curveData."N") == signature.r
     end
   end
 end

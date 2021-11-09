@@ -4,7 +4,7 @@ defmodule EllipticCurve.Curve.KnownCurves do
   """
 
   alias EllipticCurve.Curve.Data, as: Data
-  alias EllipticCurve.Utils.{Point}
+  alias EllipticCurve.Utils.Point.Data, as: Point
 
   @secp256k1Oid [1, 3, 132, 0, 10]
   @secp256k1name :secp256k1

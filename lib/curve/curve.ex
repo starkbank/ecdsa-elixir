@@ -8,11 +8,16 @@ defmodule EllipticCurve.Curve do
   y^2 = x^3 + A*x + B (mod P)
   """
   def contains?(curveData, p) do
-    IntegerUtils.modulo(
-      IntegerUtils.ipow(p.y, 2) -
-        (IntegerUtils.ipow(p.x, 3) + curveData."A" * p.x + curveData."B"),
-      curveData."P"
-    ) == 0
+    cond do
+      p.x < 0 || p.x > curveData."P" - 1 -> false
+      p.y < 0 || p.y > curveData."P" - 1 -> false
+      IntegerUtils.modulo(
+        IntegerUtils.ipow(p.y, 2) -
+          (IntegerUtils.ipow(p.x, 3) + curveData."A" * p.x + curveData."B"),
+        curveData."P"
+      ) != 0 -> false
+      true -> true
+    end
   end
 
   @doc """

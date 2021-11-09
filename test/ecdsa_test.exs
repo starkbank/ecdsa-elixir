@@ -2,6 +2,7 @@ defmodule EcdsaTest do
   use ExUnit.Case
 
   alias EllipticCurve.{PrivateKey, Ecdsa}
+  alias EllipticCurve.Signature.Data, as: Signature
 
   test "verify right message" do
     privateKey = PrivateKey.generate()
@@ -24,5 +25,14 @@ defmodule EcdsaTest do
     signature = Ecdsa.sign(message1, privateKey)
 
     assert !Ecdsa.verify?(message2, signature, publicKey)
+  end
+
+  test "verify zero signature" do
+    privateKey = PrivateKey.generate()
+    publicKey = PrivateKey.getPublicKey(privateKey)
+
+    message = "This is the wrong message"
+
+    assert !Ecdsa.verify?(message, %Signature{r: 0, s: 0}, publicKey)
   end
 end
