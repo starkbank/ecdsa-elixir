@@ -15,10 +15,10 @@ defmodule EllipticCurve.Ecdsa do
   Generates a message signature based on a private key
 
   Parameters:
-  - message [string]: message that will be signed
-  - privateKey [%EllipticCurve.PrivateKey]: private key data associated with the signer
-  - options [keyword list]: refines request
-    - hashfunc [:method]: defines the hash function applied to the message. Must be compatible with :crypto.hash. Default: :sha256;
+  - `message` [string]: message that will be signed
+  - `privateKey` [%EllipticCurve.PrivateKey]: private key data associated with the signer
+  - `options` [keyword list]: refines request
+    - `:hashfunc` [method]: defines the hash function applied to the message. Must be compatible with :crypto.hash. Default: :sha256;
 
   Returns signature:
   - signature [string]: base-64 message signature;
@@ -58,7 +58,7 @@ defmodule EllipticCurve.Ecdsa do
   - `signature` [%EllipticCurve.Signature]: signature associated with the message
   - `publicKey` [%EllipticCurve.PublicKey]: public key associated with the message signer
   - `options` [keyword list]: refines request
-    - `:hashfunc` [:method]: defines the hash function applied to the message. Must be compatible with :crypto.hash. Default: :sha256;
+    - `:hashfunc` [method]: defines the hash function applied to the message. Must be compatible with :crypto.hash. Default: :sha256;
 
   Returns:
   - verified [bool]: true if message, public key and signature are compatible, false otherwise;
