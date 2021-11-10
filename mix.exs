@@ -32,7 +32,7 @@ defmodule Ellipticcurve.MixProject do
   end
 
   def application do
-    []
+    [extra_applications: [:crypto]]
   end
 
   defp deps do

@@ -3,20 +3,20 @@ defmodule EllipticCurve.Ecdsa do
   Used to sign and verify signatures using the Elliptic Curve Digital Signature Algorithm (ECDSA)
 
   Functions:
-  - sign()
-  - verify?()
+  - `sign()`
+  - `verify?()`
   """
 
-  alias EllipticCurve.Utils.{BinaryAscii, Math}
   alias EllipticCurve.Utils.Integer, as: IntegerUtils
-  alias EllipticCurve.Signature.Data, as: Signature
+  alias EllipticCurve.Utils.BinaryAscii
+  alias EllipticCurve.{Point, Signature, Math}
 
   @doc """
   Generates a message signature based on a private key
 
   Parameters:
   - message [string]: message that will be signed
-  - privateKey [%EllipticCurve.PrivateKey.Data]: private key data associated with the signer
+  - privateKey [%EllipticCurve.PrivateKey]: private key data associated with the signer
   - options [keyword list]: refines request
     - hashfunc [:method]: defines the hash function applied to the message. Must be compatible with :crypto.hash. Default: :sha256;
 
@@ -54,11 +54,11 @@ defmodule EllipticCurve.Ecdsa do
   Verifies a message signature based on a public key
 
   Parameters:
-  - message [string]: message that will be signed
-  - signature [%EllipticCurve.Signature.Data]: signature associated with the message
-  - publicKey [%EllipticCurve.PublicKey.Data]: public key associated with the message signer
-  - options [keyword list]: refines request
-    - hashfunc [:method]: defines the hash function applied to the message. Must be compatible with :crypto.hash. Default: :sha256;
+  - `message` [string]: message that will be signed
+  - `signature` [%EllipticCurve.Signature]: signature associated with the message
+  - `publicKey` [%EllipticCurve.PublicKey]: public key associated with the message signer
+  - `options` [keyword list]: refines request
+    - `:hashfunc` [:method]: defines the hash function applied to the message. Must be compatible with :crypto.hash. Default: :sha256;
 
   Returns:
   - verified [bool]: true if message, public key and signature are compatible, false otherwise;
@@ -85,30 +85,31 @@ defmodule EllipticCurve.Ecdsa do
 
     inv = Math.inv(signature.s, curveData."N")
 
-    result = signature.r ==
-      Math.add(
-        Math.multiply(
-          curveData."G",
-          IntegerUtils.modulo(numberMessage * inv, curveData."N"),
-          curveData."N",
-          curveData."A",
-          curveData."P"
-        ),
-        Math.multiply(
-          publicKey.point,
-          IntegerUtils.modulo(signature.r * inv, curveData."N"),
-          curveData."N",
-          curveData."A",
-          curveData."P"
-        ),
+    v = Math.add(
+      Math.multiply(
+        curveData."G",
+        IntegerUtils.modulo(numberMessage * inv, curveData."N"),
+        curveData."N",
         curveData."A",
         curveData."P"
-      ).x
+      ),
+      Math.multiply(
+        publicKey.point,
+        IntegerUtils.modulo(signature.r * inv, curveData."N"),
+        curveData."N",
+        curveData."A",
+        curveData."P"
+      ),
+      curveData."A",
+      curveData."P"
+    )
 
     cond do
       signature.r < 1 || signature.r >= curveData."N" -> false
       signature.s < 1 || signature.s >= curveData."N" -> false
-      true -> result
+      Point.isAtInfinity?(v) -> false
+      IntegerUtils.modulo(v.x, curveData."N") != signature.r -> false
+      true -> true
     end
   end
 end

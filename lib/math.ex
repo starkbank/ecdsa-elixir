@@ -1,18 +1,20 @@
-defmodule EllipticCurve.Utils.Math do
+defmodule EllipticCurve.Math do
   @moduledoc false
 
   alias EllipticCurve.Utils.Integer, as: IntegerUtils
-  alias EllipticCurve.Utils.{Point}
+  alias EllipticCurve.Point
 
   @doc """
   Fast way to multily point and scalar in elliptic curves
 
-  :param p: First Point to mutiply
-  :param n: Scalar to mutiply
-  :param cN: Order of the elliptic curve
-  :param cP: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
-  :param cA: Coefficient of the first-order term of the equation Y^2 = X^3 + cA*X + B (mod p)
-  :return: Point that represents the sum of First and Second Point
+  - `p` [integer]: First Point to mutiply
+  - `n` [integer]: Scalar to mutiply
+  - `cN` [integer]: Order of the elliptic curve
+  - `cP` [integer]: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
+  - `cA` [integer]: Coefficient of the first-order term of the equation Y^2 = X^3 + cA*X + B (mod p)
+
+  Returns:
+  - `point` [%EllipticCurve.Point]: point that represents the sum of First and Second Point
   """
   def multiply(p, n, cN, cA, cP) do
     p
@@ -24,11 +26,13 @@ defmodule EllipticCurve.Utils.Math do
   @doc """
   Fast way to add two points in elliptic curves
 
-  :param p: First Point you want to add
-  :param q: Second Point you want to add
-  :param cP: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
-  :param cA: Coefficient of the first-order term of the equation Y^2 = X^3 + cA*X + B (mod p)
-  :return: Point that represents the sum of First and Second Point
+  - `p` [integer]: First Point you want to add
+  - `q` [integer]: Second Point you want to add
+  - `cP` [integer]: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
+  - `cA` [integer]: Coefficient of the first-order term of the equation Y^2 = X^3 + cA*X + B (mod p)
+
+  Returns:
+  - `point` [%EllipticCurve.Point]: point that represents the sum of First and Second Point
   """
   def add(p, q, cA, cP) do
     jacobianAdd(toJacobian(p), toJacobian(q), cA, cP)
@@ -38,9 +42,11 @@ defmodule EllipticCurve.Utils.Math do
   @doc """
   Extended Euclidean Algorithm. It's the 'division' in elliptic curves
 
-  :param x: Divisor
-  :param n: Mod for division
-  :return: Value representing the division
+  - `x` [integer]: Divisor
+  - `n` [integer]: Mod for division
+
+  Returns:
+  - `value` [integer]: value representing the division
   """
   def inv(x, _n) when x == 0 do
     0
@@ -67,9 +73,12 @@ defmodule EllipticCurve.Utils.Math do
   end
 
   # Converts point back from Jacobian coordinates
-  # :param p: First Point you want to add
-  # :param cP: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
-  # :return: Point in default coordinates
+
+  # - `p` [integer]: First Point you want to add
+  # - `cP` [integer]: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
+
+  # Returns:
+  # - `point` [%EllipticCurve.Point]: point in default coordinates
   defp toJacobian(p) do
     %Point{x: p.x, y: p.y, z: 1}
   end
@@ -92,10 +101,13 @@ defmodule EllipticCurve.Utils.Math do
   end
 
   # Doubles a point in elliptic curves
-  # :param p: Point you want to double
-  # :param cP: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
-  # :param cA: Coefficient of the first-order term of the equation Y^2 = X^3 + cA*X + B (mod p)
-  # :return: Point that represents the sum of First and Second Point
+
+  # - `p` [integer]: Point you want to double
+  # - `cP` [integer]: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
+  # - `cA` [integer]: Coefficient of the first-order term of the equation Y^2 = X^3 + cA*X + B (mod p)
+
+  # Returns:
+  # - `point` [%EllipticCurve.Point]: point that represents the sum of First and Second Point
   defp jacobianDouble(p, cA, cP) do
     if p.y == 0 do
       %Point{x: 0, y: 0, z: 0}
@@ -129,11 +141,13 @@ defmodule EllipticCurve.Utils.Math do
   end
 
   # Adds two points in the elliptic curve
-  # :param p: First Point you want to add
-  # :param q: Second Point you want to add
-  # :param cP: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
-  # :param cA: Coefficient of the first-order term of the equation Y^2 = X^3 + cA*X + B (mod p)
-  # :return: Point that represents the sum of First and Second Point
+  # - `p` [integer]: First Point you want to add
+  # - `q` [integer]: Second Point you want to add
+  # - `cP` [integer]: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
+  # - `cA` [integer]: Coefficient of the first-order term of the equation Y^2 = X^3 + cA*X + B (mod p)
+
+  # Returns:
+  # - `point` [%EllipticCurve.Point]: point that represents the sum of first and second Point
   defp jacobianAdd(p, q, cA, cP) do
     if p.y == 0 do
       q
@@ -199,12 +213,15 @@ defmodule EllipticCurve.Utils.Math do
   end
 
   # Multily point and scalar in elliptic curves
-  # :param p: First Point to mutiply
-  # :param n: Scalar to mutiply
-  # :param cN: Order of the elliptic curve
-  # :param cP: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
-  # :param cA: Coefficient of the first-order term of the equation Y^2 = X^3 + cA*X + B (mod p)
-  # :return: Point that represents the sum of First and Second Point
+
+  # - `p` [integer]: First Point to mutiply
+  # - `n` [integer]: Scalar to mutiply
+  # - `cN` [integer]: Order of the elliptic curve
+  # - `cP` [integer]: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
+  # - `cA` [integer]: Coefficient of the first-order term of the equation Y^2 = X^3 + cA*X + B (mod p)
+
+  # Returns:
+  # - `point` [%EllipticCurve.Point]: point that represents the sum of First and Second Point
   defp jacobianMultiply(_p, n, _cN, _cA, _cP) when n == 0 do
     %Point{x: 0, y: 0, z: 1}
   end
@@ -225,23 +242,18 @@ defmodule EllipticCurve.Utils.Math do
     end
   end
 
+  defp jacobianMultiply(p, _n, _cN, _cA, _cP) when p.y == 0 do
+    %Point{x: 0, y: 0, z: 1}
+  end
+
   defp jacobianMultiply(p, n, cN, cA, cP) when rem(n, 2) == 0 do
-    if p.y == 0 do
-      %Point{x: 0, y: 0, z: 1}
-    else
-      jacobianMultiply(p, div(n, 2), cN, cA, cP)
-      |> jacobianDouble(cA, cP)
-    end
+    jacobianMultiply(p, div(n, 2), cN, cA, cP)
+    |> jacobianDouble(cA, cP)
   end
 
   defp jacobianMultiply(p, n, cN, cA, cP) do
-    if p.y == 0 do
-      %Point{x: 0, y: 0, z: 1}
-    else
-      # rem(n, 2) == 1
-      jacobianMultiply(p, div(n, 2), cN, cA, cP)
-      |> jacobianDouble(cA, cP)
-      |> jacobianAdd(p, cA, cP)
-    end
+    jacobianMultiply(p, div(n, 2), cN, cA, cP)
+    |> jacobianDouble(cA, cP)
+    |> jacobianAdd(p, cA, cP)
   end
 end

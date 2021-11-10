@@ -12,11 +12,19 @@ defmodule EllipticCurve.PrivateKey do
   - fromDer!()
   """
 
-  alias EllipticCurve.{PublicKey, Curve}
-  alias EllipticCurve.PrivateKey.{Data}
-  alias EllipticCurve.PublicKey.Data, as: PublicKeyData
+  alias __MODULE__, as: PrivateKey
   alias EllipticCurve.Utils.Integer, as: IntegerUtils
-  alias EllipticCurve.Utils.{Der, BinaryAscii, Math}
+  alias EllipticCurve.Utils.{Der, BinaryAscii}
+  alias EllipticCurve.{PublicKey, Curve, Math}
+
+  @doc """
+  Holds private key data. Is usually extracted from .pem files.
+
+  Parameters:
+  - `:secret` [integer]: private key secret number;
+  - `:curve` [%EllipticCurve.Curve]: private key curve information;
+  """
+  defstruct [:secret, :curve]
 
   @hexAt "\x00"
 
@@ -24,16 +32,16 @@ defmodule EllipticCurve.PrivateKey do
   Creates a new private key
 
   Parameters:
-  - secret [int]: private key secret; Default: nil -> random key will be generated;
-  - curve [atom]: curve name; Default: :secp256k1;
+  - `secret` [integer]: private key secret; Default: nil -> random key will be generated;
+  - `curve` [atom]: curve name; Default: :secp256k1;
 
   Returns:
-  - privateKey [%EllipticCurve.PrivateKey.Data]: private key struct
+  - `privateKey` [%EllipticCurve.PrivateKey]: private key struct
 
   ## Example:
 
       iex> EllipticCurve.PrivateKey.generate()
-      %EllipticCurve.PrivateKey.Data{...}
+      %EllipticCurve.PrivateKey{...}
   """
   def generate(secret \\ nil, curve \\ :secp256k1)
 
@@ -48,7 +56,7 @@ defmodule EllipticCurve.PrivateKey do
   end
 
   def generate(secret, curve) do
-    %Data{
+    %PrivateKey{
       secret: secret,
       curve: Curve.KnownCurves.getCurveByName(curve)
     }
@@ -58,29 +66,28 @@ defmodule EllipticCurve.PrivateKey do
   Gets the public associated with a private key
 
   Parameters:
-  - privateKey [%EllipticCurve.PrivateKey.Data]: private key struct
+  - `privateKey` [%EllipticCurve.PrivateKey]: private key struct
 
   Returns:
-  - publicKey [%EllipticCurve.PublicKey.Data]: public key struct
+  - `publicKey` [%EllipticCurve.PublicKey]: public key struct
 
   ## Example:
 
       iex> EllipticCurve.PrivateKey.getPublicKey(privateKey)
-      %EllipticCurve.PublicKey.Data{...}
+      %EllipticCurve.PublicKey{...}
   """
   def getPublicKey(privateKey) do
-    curveData = privateKey.curve
-
-    %PublicKeyData{
+    curve = privateKey.curve
+    %PublicKey{
       point:
         Math.multiply(
-          curveData."G",
+          curve."G",
           privateKey.secret,
-          curveData."N",
-          curveData."A",
-          curveData."P"
+          curve."N",
+          curve."A",
+          curve."P"
         ),
-      curve: curveData
+      curve: curve
     }
   end
 
@@ -88,14 +95,14 @@ defmodule EllipticCurve.PrivateKey do
   Converts a private key in decoded struct format into a pem string
 
   Parameters:
-  - privateKey [%EllipticCurve.PrivateKey.Data]: decoded private key struct;
+  - `privateKey` [%EllipticCurve.PrivateKey]: decoded private key struct;
 
   Returns:
-  - pem [string]: private key in pem format
+  - `pem` [string]: private key in pem format
 
   ## Example:
 
-      iex> EllipticCurve.PrivateKey.toPem(%EllipticCurve.PrivateKey.Data{...})
+      iex> EllipticCurve.PrivateKey.toPem(%EllipticCurve.PrivateKey{...})
       "-----BEGIN EC PRIVATE KEY-----\nMHQCAQEEIDvS/RddF6iYa/q4oVSrGa3Kbd7aSooNpwhv9puJVv1loAcGBSuBBAAK\noUQDQgAErp2I78X4cqHscCRWMT4rhouyO197iQXRfdGgsgfS/UGaIviYiqnG3SSa\n9dsOHU/NkVSTLkBPCI0RQLF3554dZg==\n-----END EC PRIVATE KEY-----\n"
   """
   def toPem(privateKey) do
@@ -109,14 +116,14 @@ defmodule EllipticCurve.PrivateKey do
   Converts a private key in decoded struct format into a der string (raw binary)
 
   Parameters:
-  - privateKey [$EllipticCurve.PrivateKey.Data]: decoded private key struct;
+  - `privateKey` [$EllipticCurve.PrivateKey]: decoded private key struct;
 
   Returns:
-  - der [string]: private key in der format
+  - `der` [string]: private key in der format
 
   ## Example:
 
-      iex> EllipticCurve.PrivateKey.toDer(%EllipticCurve.PrivateKey.Data{...})
+      iex> EllipticCurve.PrivateKey.toDer(%EllipticCurve.PrivateKey{...})
       <<48, 116, 2, 1, 1, 4, 32, 59, 210, 253, 23, 93, 23, ...>>
   """
   def toDer(privateKey) do
@@ -140,15 +147,15 @@ defmodule EllipticCurve.PrivateKey do
   Converts a private key in pem format into decoded struct format
 
   Parameters:
-  - pem [string]: private key in pem format
+  - `pem` [string]: private key in pem format
 
   Returns {:ok, privateKey}:
-  - privateKey [%EllipticCurve.PrivateKey.Data]: decoded private key struct;
+  - `privateKey` [%EllipticCurve.PrivateKey]: decoded private key struct;
 
   ## Example:
 
       iex> EllipticCurve.PrivateKey.fromPem("-----BEGIN EC PRIVATE KEY-----\nMHQCAQEEIDvS/RddF6iYa/q4oVSrGa3Kbd7aSooNpwhv9puJVv1loAcGBSuBBAAK\noUQDQgAErp2I78X4cqHscCRWMT4rhouyO197iQXRfdGgsgfS/UGaIviYiqnG3SSa\n9dsOHU/NkVSTLkBPCI0RQLF3554dZg==\n-----END EC PRIVATE KEY-----\n")
-      {:ok, %EllipticCurve.PrivateKey.Data{...}}
+      {:ok, %EllipticCurve.PrivateKey{...}}
   """
   def fromPem(pem) do
     {:ok, fromPem!(pem)}
@@ -160,15 +167,15 @@ defmodule EllipticCurve.PrivateKey do
   Converts a private key in pem format into decoded struct format
 
   Parameters:
-  - pem [string]: private key in pem format
+  - `pem` [string]: private key in pem format
 
   Returns:
-  - privateKey [%EllipticCurve.PrivateKey.Data]: decoded private key struct;
+  - `privateKey` [%EllipticCurve.PrivateKey]: decoded private key struct;
 
   ## Example:
 
       iex> EllipticCurve.PrivateKey.fromPem!("-----BEGIN EC PRIVATE KEY-----\nMHQCAQEEIDvS/RddF6iYa/q4oVSrGa3Kbd7aSooNpwhv9puJVv1loAcGBSuBBAAK\noUQDQgAErp2I78X4cqHscCRWMT4rhouyO197iQXRfdGgsgfS/UGaIviYiqnG3SSa\n9dsOHU/NkVSTLkBPCI0RQLF3554dZg==\n-----END EC PRIVATE KEY-----\n")
-      %EllipticCurve.PrivateKey.Data{...}
+      %EllipticCurve.PrivateKey{...}
   """
   def fromPem!(pem) do
     String.split(pem, "-----BEGIN EC PRIVATE KEY-----")
@@ -181,15 +188,15 @@ defmodule EllipticCurve.PrivateKey do
   Converts a private key in der format into decoded struct format
 
   Parameters:
-  - der [string]: private key in der format
+  - `der` [string]: private key in der format
 
   Returns {:ok, privateKey}:
-  - privateKey [%EllipticCurve.PrivateKey.Data]: decoded private key struct;
+  - `privateKey` [%EllipticCurve.PrivateKey]: decoded private key struct;
 
   ## Example:
 
       iex> EllipticCurve.PrivateKey.fromDer(<<48, 116, 2, 1, 1, 4, 32, 59, 210, 253, 23, 93, 23, ...>>)
-      {:ok, %EllipticCurve.PrivateKey.Data{...}}
+      {:ok, %EllipticCurve.PrivateKey{...}}
   """
   def fromDer(der) do
     {:ok, fromDer!(der)}
@@ -201,15 +208,15 @@ defmodule EllipticCurve.PrivateKey do
   Converts a private key in der format into decoded struct format
 
   Parameters:
-  - der [string]: private key in der format
+  - `der` [string]: private key in der format
 
   Returns:
-  - privateKey [%EllipticCurve.PrivateKey.Data]: decoded private key struct;
+  - `privateKey` [%EllipticCurve.PrivateKey]: decoded private key struct;
 
   ## Example:
 
       iex> EllipticCurve.PrivateKey.fromDer!(<<48, 116, 2, 1, 1, 4, 32, 59, 210, 253, 23, 93, 23, ...>>)
-      %EllipticCurve.PrivateKey.Data{...}
+      %EllipticCurve.PrivateKey{...}
   """
   def fromDer!(der) do
     {bytes1, empty} = Der.removeSequence(der)
@@ -238,14 +245,14 @@ defmodule EllipticCurve.PrivateKey do
     end
 
     privateKeyStringLength = byte_size(privateKeyString)
-    curveData = Curve.KnownCurves.getCurveByOid(oidCurve)
-    curveLength = Curve.getLength(curveData)
+    curve = Curve.KnownCurves.getCurveByOid(oidCurve)
+    curveLength = Curve.getLength(curve)
 
     if privateKeyStringLength < curveLength do
       (String.duplicate(@hexAt, curveLength - privateKeyStringLength) <> privateKeyString)
-      |> fromString(curveData)
+      |> fromString(curve)
     else
-      fromString!(privateKeyString, curveData.name)
+      fromString!(privateKeyString, curve.name)
     end
   end
 
@@ -258,7 +265,7 @@ defmodule EllipticCurve.PrivateKey do
 
   @doc false
   def fromString!(string, curve \\ :secp256k1) do
-    %Data{
+    %PrivateKey{
       secret: BinaryAscii.numberFromString(string),
       curve: Curve.KnownCurves.getCurveByName(curve)
     }

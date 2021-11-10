@@ -11,22 +11,31 @@ defmodule EllipticCurve.Signature do
   - toDer()
   """
 
-  alias EllipticCurve.Signature.Data, as: Data
+  alias __MODULE__, as: Signature
   alias EllipticCurve.Utils.{Der, Base64, BinaryAscii}
+
+  @doc """
+  Holds signature data. Is usually extracted from base64 strings.
+
+  Parameters:
+  - `:r` [integer]: first signature number;
+  - `:s` [integer]: second signature number;
+  """
+  defstruct [:r, :s]
 
   @doc """
   Converts a base 64 signature into the decoded struct format
 
   Parameters:
-  - base64 [string]: message that will be signed
+  - `base64` [string]: message that will be signed
 
   Returns {:ok, signature}:
-  - signature [%EllipticCurve.Signature.Data]: decoded signature, exposing r and s;
+  - `signature` [%EllipticCurve.Signature]: decoded signature, exposing r and s;
 
   ## Example:
 
       iex> EllipticCurve.Ecdsa.fromBase64("MEYCIQD861pJq/fZE7GnDBycwAbb3YglVoSCVub6TwMkgFS0NgIhAJCEZTh1Mlp1cWCgMXABqh9nOQznEXnhGoSYmZK6T99T")
-      {:ok, %EllipticCurve.Signature.Data{r: 114398670046563728651181765316495176217036114587592994448444521545026466264118, s: 65366972607021398158454632864220554542282541376523937745916477386966386597715}}
+      {:ok, %EllipticCurve.Signature{r: 114398670046563728651181765316495176217036114587592994448444521545026466264118, s: 65366972607021398158454632864220554542282541376523937745916477386966386597715}}
   """
   def fromBase64(base64) do
     {:ok, fromBase64!(base64)}
@@ -41,12 +50,12 @@ defmodule EllipticCurve.Signature do
   - base64 [string]: signature in base 64 format
 
   Returns {:ok, signature}:
-  - signature [%EllipticCurve.Signature.Data]: decoded signature, exposing r and s;
+  - signature [%EllipticCurve.Signature]: decoded signature, exposing r and s;
 
   ## Example:
 
       iex> EllipticCurve.Ecdsa.fromBase64!("MEYCIQD861pJq/fZE7GnDBycwAbb3YglVoSCVub6TwMkgFS0NgIhAJCEZTh1Mlp1cWCgMXABqh9nOQznEXnhGoSYmZK6T99T")
-      %EllipticCurve.Signature.Data{r: 114398670046563728651181765316495176217036114587592994448444521545026466264118, s: 65366972607021398158454632864220554542282541376523937745916477386966386597715}
+      %EllipticCurve.Signature{r: 114398670046563728651181765316495176217036114587592994448444521545026466264118, s: 65366972607021398158454632864220554542282541376523937745916477386966386597715}
   """
   def fromBase64!(base64String) do
     base64String
@@ -58,15 +67,15 @@ defmodule EllipticCurve.Signature do
   Converts a der signature (raw binary) into the decoded struct format
 
   Parameters:
-  - der [string]: signature in der format (raw binary)
+  - `der` [string]: signature in der format (raw binary)
 
   Returns {:ok, signature}:
-  - signature [%EllipticCurve.Signature.Data]: decoded signature, exposing r and s;
+  - `signature` [%EllipticCurve.Signature]: decoded signature, exposing r and s;
 
   ## Example:
 
       iex> EllipticCurve.Ecdsa.fromDer(<<48, 69, 2, 33, 0, 211, 243, 12, 93, ...>>)
-      {:ok, %EllipticCurve.Signature.Data{r: 95867440227398247533351136059968563162267771464707645727187625451839377520639, s: 35965164910442916948460815891253401171705649249124379540577916592403246631835}}
+      {:ok, %EllipticCurve.Signature{r: 95867440227398247533351136059968563162267771464707645727187625451839377520639, s: 35965164910442916948460815891253401171705649249124379540577916592403246631835}}
   """
   def fromDer(der) do
     {:ok, fromDer!(der)}
@@ -78,15 +87,15 @@ defmodule EllipticCurve.Signature do
   Converts a der signature (raw binary) into the decoded struct format
 
   Parameters:
-  - der [string]: signature in der format (raw binary)
+  - `der` [string]: signature in der format (raw binary)
 
   Returns:
-  - signature [%EllipticCurve.Signature.Data]: decoded signature, exposing r and s;
+  - `signature` [%EllipticCurve.Signature]: decoded signature, exposing r and s;
 
   ## Example:
 
       iex> EllipticCurve.Ecdsa.fromDer!(<<48, 69, 2, 33, 0, 211, 243, 12, 93, ...>>)
-      %EllipticCurve.Signature.Data{r: 95867440227398247533351136059968563162267771464707645727187625451839377520639, s: 35965164910442916948460815891253401171705649249124379540577916592403246631835}
+      %EllipticCurve.Signature{r: 95867440227398247533351136059968563162267771464707645727187625451839377520639, s: 35965164910442916948460815891253401171705649249124379540577916592403246631835}
   """
   def fromDer!(der) do
     {rs, firstEmpty} = Der.removeSequence(der)
@@ -102,21 +111,21 @@ defmodule EllipticCurve.Signature do
       raise "trailing junk after DER numbers: " <> BinaryAscii.hexFromBinary(secondEmpty)
     end
 
-    %Data{r: r, s: s}
+    %Signature{r: r, s: s}
   end
 
   @doc """
   Converts a signature in decoded struct format into a base 64 string
 
   Parameters:
-  - signature [%EllipticCurve.Signature.Data]: decoded signature struct;
+  - `signature` [%EllipticCurve.Signature]: decoded signature struct;
 
   Returns:
-  - base64 [string]: signature in base 64 format
+  - `base64` [string]: signature in base 64 format
 
   ## Example:
 
-      iex> EllipticCurve.Ecdsa.toBase64(%EllipticCurve.Signature.Data{r: 123, s: 456})
+      iex> EllipticCurve.Ecdsa.toBase64(%EllipticCurve.Signature{r: 123, s: 456})
       "YXNvZGlqYW9pZGphb2lkamFvaWRqc2Fpb3NkamE="
   """
   def toBase64(signature) do
@@ -129,14 +138,14 @@ defmodule EllipticCurve.Signature do
   Converts a signature in decoded struct format into der format (raw binary)
 
   Parameters:
-  - signature [%EllipticCurve.Signature.Data]: decoded signature struct;
+  - `signature` [%EllipticCurve.Signature]: decoded signature struct;
 
   Returns:
-  - der [string]: signature in der format
+  - `der` [string]: signature in der format
 
   ## Example:
 
-      iex> EllipticCurve.Ecdsa.toDer(%EllipticCurve.Signature.Data{r: 95867440227398247533351136059968563162267771464707645727187625451839377520639, s: 35965164910442916948460815891253401171705649249124379540577916592403246631835})
+      iex> EllipticCurve.Ecdsa.toDer(%EllipticCurve.Signature{r: 95867440227398247533351136059968563162267771464707645727187625451839377520639, s: 35965164910442916948460815891253401171705649249124379540577916592403246631835})
       <<48, 69, 2, 33, 0, 211, 243, 12, 93, 107, 214, 149, 243, ...>>
   """
   def toDer(signature) do
