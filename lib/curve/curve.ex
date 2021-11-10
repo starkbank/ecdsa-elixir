@@ -28,15 +28,12 @@ defmodule EllipticCurve.Curve do
   Returns:
   - `result` [boolean]: true if point is in curve, false otherwise
   """
-  def contains?(curveData, p) do
+  def contains?(curve, p) do
     cond do
-      p.x < 0 || p.x > curveData."P" - 1 -> false
-      p.y < 0 || p.y > curveData."P" - 1 -> false
-      IntegerUtils.modulo(
-        IntegerUtils.ipow(p.y, 2) -
-          (IntegerUtils.ipow(p.x, 3) + curveData."A" * p.x + curveData."B"),
-        curveData."P"
-      ) != 0 -> false
+      p.x < 0 || p.x > curve."P" - 1 -> false
+      p.y < 0 || p.y > curve."P" - 1 -> false
+      IntegerUtils.ipow(p.y, 2) - (IntegerUtils.ipow(p.x, 3) + curve."A" * p.x + curve."B")
+        |> IntegerUtils.modulo(curve."P") != 0 -> false
       true -> true
     end
   end

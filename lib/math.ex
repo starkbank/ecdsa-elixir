@@ -242,23 +242,18 @@ defmodule EllipticCurve.Math do
     end
   end
 
+  defp jacobianMultiply(p, _n, _cN, _cA, _cP) when p.y == 0 do
+    %Point{x: 0, y: 0, z: 1}
+  end
+
   defp jacobianMultiply(p, n, cN, cA, cP) when rem(n, 2) == 0 do
-    if p.y == 0 do
-      %Point{x: 0, y: 0, z: 1}
-    else
-      jacobianMultiply(p, div(n, 2), cN, cA, cP)
-      |> jacobianDouble(cA, cP)
-    end
+    jacobianMultiply(p, div(n, 2), cN, cA, cP)
+    |> jacobianDouble(cA, cP)
   end
 
   defp jacobianMultiply(p, n, cN, cA, cP) do
-    if p.y == 0 do
-      %Point{x: 0, y: 0, z: 1}
-    else
-      # rem(n, 2) == 1
-      jacobianMultiply(p, div(n, 2), cN, cA, cP)
-      |> jacobianDouble(cA, cP)
-      |> jacobianAdd(p, cA, cP)
-    end
+    jacobianMultiply(p, div(n, 2), cN, cA, cP)
+    |> jacobianDouble(cA, cP)
+    |> jacobianAdd(p, cA, cP)
   end
 end
