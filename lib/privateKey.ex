@@ -21,8 +21,8 @@ defmodule EllipticCurve.PrivateKey do
   Holds private key data. Is usually extracted from .pem files.
 
   Parameters:
-  - secret [integer]: private key secret number;
-  - curve [%EllipticCurve.Curve]: private key curve information;
+  - `:secret` [integer]: private key secret number;
+  - `:curve` [%EllipticCurve.Curve]: private key curve information;
   """
   defstruct [:secret, :curve]
 
@@ -32,11 +32,11 @@ defmodule EllipticCurve.PrivateKey do
   Creates a new private key
 
   Parameters:
-  - secret [int]: private key secret; Default: nil -> random key will be generated;
-  - curve [atom]: curve name; Default: :secp256k1;
+  - `secret` [integer]: private key secret; Default: nil -> random key will be generated;
+  - `curve` [atom]: curve name; Default: :secp256k1;
 
   Returns:
-  - privateKey [%EllipticCurve.PrivateKey]: private key struct
+  - `privateKey` [%EllipticCurve.PrivateKey]: private key struct
 
   ## Example:
 
@@ -66,10 +66,10 @@ defmodule EllipticCurve.PrivateKey do
   Gets the public associated with a private key
 
   Parameters:
-  - privateKey [%EllipticCurve.PrivateKey]: private key struct
+  - `privateKey` [%EllipticCurve.PrivateKey]: private key struct
 
   Returns:
-  - publicKey [%EllipticCurve.PublicKey]: public key struct
+  - `publicKey` [%EllipticCurve.PublicKey]: public key struct
 
   ## Example:
 
@@ -95,10 +95,10 @@ defmodule EllipticCurve.PrivateKey do
   Converts a private key in decoded struct format into a pem string
 
   Parameters:
-  - privateKey [%EllipticCurve.PrivateKey]: decoded private key struct;
+  - `privateKey` [%EllipticCurve.PrivateKey]: decoded private key struct;
 
   Returns:
-  - pem [string]: private key in pem format
+  - `pem` [string]: private key in pem format
 
   ## Example:
 
@@ -116,10 +116,10 @@ defmodule EllipticCurve.PrivateKey do
   Converts a private key in decoded struct format into a der string (raw binary)
 
   Parameters:
-  - privateKey [$EllipticCurve.PrivateKey]: decoded private key struct;
+  - `privateKey` [$EllipticCurve.PrivateKey]: decoded private key struct;
 
   Returns:
-  - der [string]: private key in der format
+  - `der` [string]: private key in der format
 
   ## Example:
 
@@ -147,10 +147,10 @@ defmodule EllipticCurve.PrivateKey do
   Converts a private key in pem format into decoded struct format
 
   Parameters:
-  - pem [string]: private key in pem format
+  - `pem` [string]: private key in pem format
 
   Returns {:ok, privateKey}:
-  - privateKey [%EllipticCurve.PrivateKey]: decoded private key struct;
+  - `privateKey` [%EllipticCurve.PrivateKey]: decoded private key struct;
 
   ## Example:
 
@@ -167,10 +167,10 @@ defmodule EllipticCurve.PrivateKey do
   Converts a private key in pem format into decoded struct format
 
   Parameters:
-  - pem [string]: private key in pem format
+  - `pem` [string]: private key in pem format
 
   Returns:
-  - privateKey [%EllipticCurve.PrivateKey]: decoded private key struct;
+  - `privateKey` [%EllipticCurve.PrivateKey]: decoded private key struct;
 
   ## Example:
 
@@ -188,10 +188,10 @@ defmodule EllipticCurve.PrivateKey do
   Converts a private key in der format into decoded struct format
 
   Parameters:
-  - der [string]: private key in der format
+  - `der` [string]: private key in der format
 
   Returns {:ok, privateKey}:
-  - privateKey [%EllipticCurve.PrivateKey]: decoded private key struct;
+  - `privateKey` [%EllipticCurve.PrivateKey]: decoded private key struct;
 
   ## Example:
 
@@ -208,10 +208,10 @@ defmodule EllipticCurve.PrivateKey do
   Converts a private key in der format into decoded struct format
 
   Parameters:
-  - der [string]: private key in der format
+  - `der` [string]: private key in der format
 
   Returns:
-  - privateKey [%EllipticCurve.PrivateKey]: decoded private key struct;
+  - `privateKey` [%EllipticCurve.PrivateKey]: decoded private key struct;
 
   ## Example:
 

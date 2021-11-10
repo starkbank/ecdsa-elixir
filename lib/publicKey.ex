@@ -19,8 +19,8 @@ defmodule EllipticCurve.PublicKey do
   Holds public key data. Is usually extracted from .pem files or from the private key itself.
 
   Parameters:
-  - point [%EllipticCurve.Utils.Point]: public key point data;
-  - curve [%EllipticCurve.Curve]: public key curve information;
+  - `:point` [%EllipticCurve.Utils.Point]: public key point data;
+  - `:curve` [%EllipticCurve.Curve]: public key curve information;
   """
   defstruct [:point, :curve]
 
@@ -28,10 +28,10 @@ defmodule EllipticCurve.PublicKey do
   Converts a public key in decoded struct format into a pem string
 
   Parameters:
-  - publicKey [%EllipticCurve.PublicKey]: decoded public key struct;
+  - `publicKey` [%EllipticCurve.PublicKey]: decoded public key struct;
 
   Returns:
-  - pem [string]: public key in pem format
+  - `pem` [string]: public key in pem format
 
   ## Example:
 
@@ -48,10 +48,10 @@ defmodule EllipticCurve.PublicKey do
   Converts a public key in decoded struct format into a der string (raw binary)
 
   Parameters:
-  - publicKey [%EllipticCurve.PublicKey]: decoded public key struct;
+  - `publicKey` [%EllipticCurve.PublicKey]: decoded public key struct;
 
   Returns:
-  - der [string]: public key in der format
+  - `der` [string]: public key in der format
 
   ## Example:
 
@@ -95,10 +95,10 @@ defmodule EllipticCurve.PublicKey do
   Converts a public key in pem format into decoded struct format
 
   Parameters:
-  - pem [string]: public key in pem format
+  - `pem` [string]: public key in pem format
 
   Returns {:ok, publicKey}:
-  - publicKey [%EllipticCurve.PublicKey]: decoded public key struct;
+  - `publicKey` [%EllipticCurve.PublicKey]: decoded public key struct;
 
   ## Example:
 
@@ -115,10 +115,10 @@ defmodule EllipticCurve.PublicKey do
   Converts a public key in pem format into decoded struct format
 
   Parameters:
-  - pem [string]: public key in pem format
+  - `pem` [string]: public key in pem format
 
   Returns:
-  - publicKey [%EllipticCurve.PublicKey]: decoded public key struct;
+  - `publicKey` [%EllipticCurve.PublicKey]: decoded public key struct;
 
   ## Example:
 
@@ -135,10 +135,10 @@ defmodule EllipticCurve.PublicKey do
   Converts a public key in der (raw binary) format into decoded struct format
 
   Parameters:
-  - der [string]: public key in der format
+  - `der` [string]: public key in der format
 
   Returns {:ok, publicKey}:
-  - publicKey [%EllipticCurve.PublicKey]: decoded public key struct;
+  - `publicKey` [%EllipticCurve.PublicKey]: decoded public key struct;
 
   ## Example:
 
@@ -155,10 +155,10 @@ defmodule EllipticCurve.PublicKey do
   Converts a public key in der (raw binary) format into decoded struct format
 
   Parameters:
-  - der [string]: public key in der format
+  - `der` [string]: public key in der format
 
   Returns:
-  - publicKey [%EllipticCurve.PublicKey]: decoded public key struct;
+  - `publicKey` [%EllipticCurve.PublicKey]: decoded public key struct;
 
   ## Example:
 

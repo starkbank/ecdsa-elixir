@@ -18,8 +18,8 @@ defmodule EllipticCurve.Signature do
   Holds signature data. Is usually extracted from base64 strings.
 
   Parameters:
-  - r [integer]: first signature number;
-  - s [integer]: second signature number;
+  - `:r` [integer]: first signature number;
+  - `:s` [integer]: second signature number;
   """
   defstruct [:r, :s]
 
@@ -27,10 +27,10 @@ defmodule EllipticCurve.Signature do
   Converts a base 64 signature into the decoded struct format
 
   Parameters:
-  - base64 [string]: message that will be signed
+  - `base64` [string]: message that will be signed
 
   Returns {:ok, signature}:
-  - signature [%EllipticCurve.Signature]: decoded signature, exposing r and s;
+  - `signature` [%EllipticCurve.Signature]: decoded signature, exposing r and s;
 
   ## Example:
 
@@ -67,10 +67,10 @@ defmodule EllipticCurve.Signature do
   Converts a der signature (raw binary) into the decoded struct format
 
   Parameters:
-  - der [string]: signature in der format (raw binary)
+  - `der` [string]: signature in der format (raw binary)
 
   Returns {:ok, signature}:
-  - signature [%EllipticCurve.Signature]: decoded signature, exposing r and s;
+  - `signature` [%EllipticCurve.Signature]: decoded signature, exposing r and s;
 
   ## Example:
 
@@ -87,10 +87,10 @@ defmodule EllipticCurve.Signature do
   Converts a der signature (raw binary) into the decoded struct format
 
   Parameters:
-  - der [string]: signature in der format (raw binary)
+  - `der` [string]: signature in der format (raw binary)
 
   Returns:
-  - signature [%EllipticCurve.Signature]: decoded signature, exposing r and s;
+  - `signature` [%EllipticCurve.Signature]: decoded signature, exposing r and s;
 
   ## Example:
 
@@ -118,10 +118,10 @@ defmodule EllipticCurve.Signature do
   Converts a signature in decoded struct format into a base 64 string
 
   Parameters:
-  - signature [%EllipticCurve.Signature]: decoded signature struct;
+  - `signature` [%EllipticCurve.Signature]: decoded signature struct;
 
   Returns:
-  - base64 [string]: signature in base 64 format
+  - `base64` [string]: signature in base 64 format
 
   ## Example:
 
@@ -138,10 +138,10 @@ defmodule EllipticCurve.Signature do
   Converts a signature in decoded struct format into der format (raw binary)
 
   Parameters:
-  - signature [%EllipticCurve.Signature]: decoded signature struct;
+  - `signature` [%EllipticCurve.Signature]: decoded signature struct;
 
   Returns:
-  - der [string]: signature in der format
+  - `der` [string]: signature in der format
 
   ## Example:
 
