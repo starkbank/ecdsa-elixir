@@ -15,6 +15,9 @@ Given a version number MAJOR.MINOR.PATCH, increment:
 ## [Unreleased]
 ### Fixed
 - point at infinity verification in signature and public key
+### Changed
+- internal files and modules structure
+- internal .Data structs to be integrated into the respective modules
 
 ## [1.0.1] - 2021-11-04
 ### Fixed

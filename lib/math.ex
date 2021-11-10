@@ -1,8 +1,8 @@
-defmodule EllipticCurve.Utils.Math do
+defmodule EllipticCurve.Math do
   @moduledoc false
 
   alias EllipticCurve.Utils.Integer, as: IntegerUtils
-  alias EllipticCurve.Utils.Point.Data, as: Point
+  alias EllipticCurve.Point
 
   @doc """
   Fast way to multily point and scalar in elliptic curves

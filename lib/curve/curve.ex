@@ -4,6 +4,20 @@ defmodule EllipticCurve.Curve do
   alias EllipticCurve.Utils.Integer, as: IntegerUtils
 
   @doc """
+  Specific elliptic curve data.
+
+  Attributes (return-only):
+    - `:A` [number]: angular coefficient of x in the curve equation. ex: 123
+    - `:B` [number]: linear coefficient of x in the curve equation. ex: 123
+    - `:P` [number]: curve modulo. ex: 12345
+    - `:N` [number]: curve order. ex: 12345
+    - `:G` [EllipticCurve.Point]: EC Point corresponding to the public key. ex: %Point{x: 123, y: 456}
+    - `:name` [string]: curve name. ex: "secp256k1"
+    - `:oid` [list of numbers]: ASN.1 Object Identifier. ex: "checking"
+  """
+  defstruct [:A, :B, :P, :N, :G, :name, :oid]
+
+  @doc """
   Verifies if the point `p` is on the curve using the elliptic curve equation:
   y^2 = x^3 + A*x + B (mod P)
   """

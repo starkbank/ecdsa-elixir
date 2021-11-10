@@ -7,17 +7,16 @@ defmodule EllipticCurve.Ecdsa do
   - verify?()
   """
 
-  alias EllipticCurve.Utils.{BinaryAscii, Math}
-  alias EllipticCurve.Utils.Point
   alias EllipticCurve.Utils.Integer, as: IntegerUtils
-  alias EllipticCurve.Signature.Data, as: Signature
+  alias EllipticCurve.Utils.BinaryAscii
+  alias EllipticCurve.{Point, Signature, Math}
 
   @doc """
   Generates a message signature based on a private key
 
   Parameters:
   - message [string]: message that will be signed
-  - privateKey [%EllipticCurve.PrivateKey.Data]: private key data associated with the signer
+  - privateKey [%EllipticCurve.PrivateKey]: private key data associated with the signer
   - options [keyword list]: refines request
     - hashfunc [:method]: defines the hash function applied to the message. Must be compatible with :crypto.hash. Default: :sha256;
 
@@ -56,8 +55,8 @@ defmodule EllipticCurve.Ecdsa do
 
   Parameters:
   - message [string]: message that will be signed
-  - signature [%EllipticCurve.Signature.Data]: signature associated with the message
-  - publicKey [%EllipticCurve.PublicKey.Data]: public key associated with the message signer
+  - signature [%EllipticCurve.Signature]: signature associated with the message
+  - publicKey [%EllipticCurve.PublicKey]: public key associated with the message signer
   - options [keyword list]: refines request
     - hashfunc [:method]: defines the hash function applied to the message. Must be compatible with :crypto.hash. Default: :sha256;
 
@@ -109,7 +108,8 @@ defmodule EllipticCurve.Ecdsa do
       signature.r < 1 || signature.r >= curveData."N" -> false
       signature.s < 1 || signature.s >= curveData."N" -> false
       Point.isAtInfinity?(v) -> false
-      true -> IntegerUtils.modulo(v.x, curveData."N") == signature.r
+      IntegerUtils.modulo(v.x, curveData."N") != signature.r -> false
+      true -> true
     end
   end
 end

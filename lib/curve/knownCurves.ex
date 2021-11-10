@@ -3,8 +3,7 @@ defmodule EllipticCurve.Curve.KnownCurves do
   Describes the elliptic curves supported by the package
   """
 
-  alias EllipticCurve.Curve.Data, as: Data
-  alias EllipticCurve.Utils.Point.Data, as: Point
+  alias EllipticCurve.{Curve, Point}
 
   @secp256k1Oid [1, 3, 132, 0, 10]
   @secp256k1name :secp256k1
@@ -27,7 +26,7 @@ defmodule EllipticCurve.Curve.KnownCurves do
   end
 
   def secp256k1() do
-    %Data{
+    %Curve{
       name: @secp256k1name,
       A: 0x0000000000000000000000000000000000000000000000000000000000000000,
       B: 0x0000000000000000000000000000000000000000000000000000000000000007,
@@ -42,7 +41,7 @@ defmodule EllipticCurve.Curve.KnownCurves do
   end
 
   def prime256v1() do
-    %Data{
+    %Curve{
       name: @prime256v1name,
       A: 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC,
       B: 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B,

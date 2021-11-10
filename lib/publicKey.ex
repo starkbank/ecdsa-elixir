@@ -11,24 +11,31 @@ defmodule EllipticCurve.PublicKey do
   - fromDer!()
   """
 
-  alias EllipticCurve.Utils.{Der, BinaryAscii, Math}
-  alias EllipticCurve.Utils.Point
-  alias EllipticCurve.Utils.Point.Data, as: PointData
-  alias EllipticCurve.{Curve}
-  alias EllipticCurve.PublicKey.{Data}
+  alias __MODULE__, as: PublicKey
+  alias EllipticCurve.Utils.{Der, BinaryAscii}
+  alias EllipticCurve.{Point, Curve, Math}
+
+  @doc """
+  Holds public key data. Is usually extracted from .pem files or from the private key itself.
+
+  Parameters:
+  - point [%EllipticCurve.Utils.Point]: public key point data;
+  - curve [%EllipticCurve.Curve]: public key curve information;
+  """
+  defstruct [:point, :curve]
 
   @doc """
   Converts a public key in decoded struct format into a pem string
 
   Parameters:
-  - publicKey [%EllipticCurve.PublicKey.Data]: decoded public key struct;
+  - publicKey [%EllipticCurve.PublicKey]: decoded public key struct;
 
   Returns:
   - pem [string]: public key in pem format
 
   ## Example:
 
-      iex> EllipticCurve.PublicKey.toPem(%EllipticCurve.PublicKey.Data{...})
+      iex> EllipticCurve.PublicKey.toPem(%EllipticCurve.PublicKey{...})
       "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAErp2I78X4cqHscCRWMT4rhouyO197iQXR\nfdGgsgfS/UGaIviYiqnG3SSa9dsOHU/NkVSTLkBPCI0RQLF3554dZg==\n-----END PUBLIC KEY-----\n"
   """
   def toPem(publicKey) do
@@ -41,14 +48,14 @@ defmodule EllipticCurve.PublicKey do
   Converts a public key in decoded struct format into a der string (raw binary)
 
   Parameters:
-  - publicKey [%EllipticCurve.PublicKey.Data]: decoded public key struct;
+  - publicKey [%EllipticCurve.PublicKey]: decoded public key struct;
 
   Returns:
   - der [string]: public key in der format
 
   ## Example:
 
-      iex> EllipticCurve.PublicKey.toDer(%EllipticCurve.PublicKey.Data{...})
+      iex> EllipticCurve.PublicKey.toDer(%EllipticCurve.PublicKey{...})
       <<48, 86, 48, 16, 6, 7, 42, 134, 72, 206, 61, ...>>
   """
   def toDer(publicKey) do
@@ -91,12 +98,12 @@ defmodule EllipticCurve.PublicKey do
   - pem [string]: public key in pem format
 
   Returns {:ok, publicKey}:
-  - publicKey [%EllipticCurve.PublicKey.Data]: decoded public key struct;
+  - publicKey [%EllipticCurve.PublicKey]: decoded public key struct;
 
   ## Example:
 
       iex> EllipticCurve.PublicKey.fromPem("-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAErp2I78X4cqHscCRWMT4rhouyO197iQXR\nfdGgsgfS/UGaIviYiqnG3SSa9dsOHU/NkVSTLkBPCI0RQLF3554dZg==\n-----END PUBLIC KEY-----\n")
-      {:ok, %EllipticCurve.PublicKey.Data{...}}
+      {:ok, %EllipticCurve.PublicKey{...}}
   """
   def fromPem(pem) do
     {:ok, fromPem!(pem)}
@@ -111,12 +118,12 @@ defmodule EllipticCurve.PublicKey do
   - pem [string]: public key in pem format
 
   Returns:
-  - publicKey [%EllipticCurve.PublicKey.Data]: decoded public key struct;
+  - publicKey [%EllipticCurve.PublicKey]: decoded public key struct;
 
   ## Example:
 
       iex> EllipticCurve.PublicKey.fromPem!("-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAErp2I78X4cqHscCRWMT4rhouyO197iQXR\nfdGgsgfS/UGaIviYiqnG3SSa9dsOHU/NkVSTLkBPCI0RQLF3554dZg==\n-----END PUBLIC KEY-----\n")
-      %EllipticCurve.PublicKey.Data{...}
+      %EllipticCurve.PublicKey{...}
   """
   def fromPem!(pem) do
     pem
@@ -131,12 +138,12 @@ defmodule EllipticCurve.PublicKey do
   - der [string]: public key in der format
 
   Returns {:ok, publicKey}:
-  - publicKey [%EllipticCurve.PublicKey.Data]: decoded public key struct;
+  - publicKey [%EllipticCurve.PublicKey]: decoded public key struct;
 
   ## Example:
 
       iex> EllipticCurve.PublicKey.fromDer(<<48, 86, 48, 16, 6, 7, 42, 134, ...>>)
-      {:ok, %EllipticCurve.PublicKey.Data{...}}
+      {:ok, %EllipticCurve.PublicKey{...}}
   """
   def fromDer(der) do
     {:ok, fromDer!(der)}
@@ -151,12 +158,12 @@ defmodule EllipticCurve.PublicKey do
   - der [string]: public key in der format
 
   Returns:
-  - publicKey [%EllipticCurve.PublicKey.Data]: decoded public key struct;
+  - publicKey [%EllipticCurve.PublicKey]: decoded public key struct;
 
   ## Example:
 
       iex> EllipticCurve.PublicKey.fromDer!(<<48, 86, 48, 16, 6, 7, 42, 134, ...>>)
-      %EllipticCurve.PublicKey.Data{...}
+      %EllipticCurve.PublicKey{...}
   """
   def fromDer!(der) do
     {s1, empty} = Der.removeSequence(der)
@@ -175,7 +182,7 @@ defmodule EllipticCurve.PublicKey do
       raise "trailing junk after DER public key objects: #{BinaryAscii.hexFromBinary(empty)}"
     end
 
-    curveData = Curve.KnownCurves.getCurveByOid(oidCurve)
+    curve = Curve.KnownCurves.getCurveByOid(oidCurve)
 
     {pointString, empty} = Der.removeBitString(pointBitString)
 
@@ -184,7 +191,7 @@ defmodule EllipticCurve.PublicKey do
     end
 
     binary_part(pointString, 2, byte_size(pointString) - 2)
-    |> fromString!(curveData.name)
+    |> fromString!(curve.name)
   end
 
   @doc false
@@ -196,27 +203,27 @@ defmodule EllipticCurve.PublicKey do
 
   @doc false
   def fromString!(string, curve \\ :secp256k1, validatePoint \\ true) do
-    curveData = Curve.KnownCurves.getCurveByName(curve)
-    baseLength = Curve.getLength(curveData)
+    curve = Curve.KnownCurves.getCurveByName(curve)
+    baseLength = Curve.getLength(curve)
 
     xs = binary_part(string, 0, baseLength)
     ys = binary_part(string, baseLength, byte_size(string) - baseLength)
 
-    point = %PointData{
+    point = %Point{
       x: BinaryAscii.numberFromString(xs),
       y: BinaryAscii.numberFromString(ys)
     }
-    
-    publicKey = %Data{point: point, curve: curveData}
+
+    publicKey = %PublicKey{point: point, curve: curve}
 
     cond do
       validatePoint == false -> publicKey
-      Point.isAtInfinity?(point) -> 
+      Point.isAtInfinity?(point) ->
         raise "Public Key point is at infinity"
-      Curve.contains?(curveData, point) == false -> 
-        raise "Point (#{point.x},#{point.y}) is not valid for curve #{curveData.name}"
-      Point.isAtInfinity?(Math.multiply(point, curveData."N", curveData."N", curveData."A", curveData."P")) == false ->
-        raise "Point (#{point.x},#{point.y}) * #{curveData.name}.N is not at infinity"
+      Curve.contains?(curve, point) == false ->
+        raise "Point (#{point.x},#{point.y}) is not valid for curve #{curve.name}"
+      Point.isAtInfinity?(Math.multiply(point, curve."N", curve."N", curve."A", curve."P")) == false ->
+        raise "Point (#{point.x},#{point.y}) * #{curve.name}.N is not at infinity"
       true -> publicKey
     end
   end
