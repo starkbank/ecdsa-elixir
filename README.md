@@ -11,7 +11,7 @@ To install [Stark Bank]\`s ECDSA-Elixir, add `starkbank_ecdsa` to your list of d
 ```elixir
 def deps do
   [
-    {:starkbank_ecdsa, "~> 1.0.1"}
+    {:starkbank_ecdsa, "~> 1.1.0"}
   ]
 end
 ```

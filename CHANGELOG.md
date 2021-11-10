@@ -13,6 +13,8 @@ Given a version number MAJOR.MINOR.PATCH, increment:
 
 
 ## [Unreleased]
+
+## [1.1.0] - 2021-11-10
 ### Fixed
 - point at infinity verification in signature and public key
 - missing :crypto Erlang application reference to mix.exs
