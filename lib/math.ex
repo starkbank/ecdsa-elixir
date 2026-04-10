@@ -4,17 +4,79 @@ defmodule EllipticCurve.Math do
   alias EllipticCurve.Utils.Integer, as: IntegerUtils
   alias EllipticCurve.Point
 
+  use Bitwise
+
   @doc """
-  Fast way to multily point and scalar in elliptic curves
+  Tonelli-Shanks algorithm for modular square root. Works for all odd primes.
+  """
+  def modularSquareRoot(value, _prime) when value == 0, do: 0
 
-  - `p` [integer]: First Point to mutiply
-  - `n` [integer]: Scalar to mutiply
+  def modularSquareRoot(value, prime) when prime == 2, do: IntegerUtils.modulo(value, 2)
+
+  def modularSquareRoot(value, prime) do
+    # Factor out powers of 2: prime - 1 = Q * 2^S
+    {q, s} = factor_twos(prime - 1, 0)
+
+    if s == 1 do
+      # prime = 3 (mod 4) - fast path
+      IntegerUtils.mod_pow(value, div(prime + 1, 4), prime)
+    else
+      # Find a quadratic non-residue z
+      z = find_non_residue(2, prime)
+
+      m = s
+      c = IntegerUtils.mod_pow(z, q, prime)
+      t = IntegerUtils.mod_pow(value, q, prime)
+      r = IntegerUtils.mod_pow(value, div(q + 1, 2), prime)
+
+      tonelli_loop(m, c, t, r, prime)
+    end
+  end
+
+  defp factor_twos(q, s) when rem(q, 2) == 0, do: factor_twos(div(q, 2), s + 1)
+  defp factor_twos(q, s), do: {q, s}
+
+  defp find_non_residue(z, prime) do
+    if IntegerUtils.mod_pow(z, div(prime - 1, 2), prime) == prime - 1 do
+      z
+    else
+      find_non_residue(z + 1, prime)
+    end
+  end
+
+  defp tonelli_loop(m, c, t, r, prime) do
+    if t == 1 do
+      r
+    else
+      # Find the least i such that t^(2^i) = 1 (mod prime)
+      i = find_least_i(IntegerUtils.modulo(t * t, prime), 1, prime)
+
+      b = IntegerUtils.mod_pow(c, 1 <<< (m - i - 1), prime)
+      new_m = i
+      new_c = IntegerUtils.modulo(b * b, prime)
+      new_t = IntegerUtils.modulo(t * new_c, prime)
+      new_r = IntegerUtils.modulo(r * b, prime)
+
+      tonelli_loop(new_m, new_c, new_t, new_r, prime)
+    end
+  end
+
+  defp find_least_i(temp, i, prime) do
+    if temp == 1 do
+      i
+    else
+      find_least_i(IntegerUtils.modulo(temp * temp, prime), i + 1, prime)
+    end
+  end
+
+  @doc """
+  Fast way to multiply point and scalar in elliptic curves
+
+  - `p` [Point]: First Point to multiply
+  - `n` [integer]: Scalar to multiply
   - `cN` [integer]: Order of the elliptic curve
-  - `cP` [integer]: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
-  - `cA` [integer]: Coefficient of the first-order term of the equation Y^2 = X^3 + cA*X + B (mod p)
-
-  Returns:
-  - `point` [%EllipticCurve.Point]: point that represents the sum of First and Second Point
+  - `cA` [integer]: Coefficient of the first-order term
+  - `cP` [integer]: Prime number in the module
   """
   def multiply(p, n, cN, cA, cP) do
     p
@@ -25,14 +87,6 @@ defmodule EllipticCurve.Math do
 
   @doc """
   Fast way to add two points in elliptic curves
-
-  - `p` [integer]: First Point you want to add
-  - `q` [integer]: Second Point you want to add
-  - `cP` [integer]: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
-  - `cA` [integer]: Coefficient of the first-order term of the equation Y^2 = X^3 + cA*X + B (mod p)
-
-  Returns:
-  - `point` [%EllipticCurve.Point]: point that represents the sum of First and Second Point
   """
   def add(p, q, cA, cP) do
     jacobianAdd(toJacobian(p), toJacobian(q), cA, cP)
@@ -40,220 +94,180 @@ defmodule EllipticCurve.Math do
   end
 
   @doc """
-  Extended Euclidean Algorithm. It's the 'division' in elliptic curves
-
-  - `x` [integer]: Divisor
-  - `n` [integer]: Mod for division
-
-  Returns:
-  - `value` [integer]: value representing the division
+  Compute n1*p1 + n2*p2 using Shamir's trick (simultaneous double-and-add).
+  Not constant-time -- use only with public scalars (e.g. verification).
   """
-  def inv(x, _n) when x == 0 do
-    0
+  def multiplyAndAdd(p1, n1, p2, n2, cN, cA, cP) do
+    shamirMultiply(
+      toJacobian(p1), n1,
+      toJacobian(p2), n2,
+      cN, cA, cP
+    )
+    |> fromJacobian(cP)
   end
+
+  @doc """
+  Modular inverse using Fermat's little theorem: x^(n-2) mod n.
+  Requires n to be prime (true for all ECDSA curve parameters).
+  """
+  def inv(0, _n), do: 0
 
   def inv(x, n) do
-    invOperator(1, 0, IntegerUtils.modulo(x, n), n)
-    |> IntegerUtils.modulo(n)
+    IntegerUtils.mod_pow(x, n - 2, n)
   end
 
-  defp invOperator(lm, hm, low, high) when low > 1 do
-    r = div(high, low)
-
-    invOperator(
-      hm - lm * r,
-      lm,
-      high - low * r,
-      low
-    )
-  end
-
-  defp invOperator(lm, _hm, _low, _high) do
-    lm
-  end
-
-  # Converts point back from Jacobian coordinates
-
-  # - `p` [integer]: First Point you want to add
-  # - `cP` [integer]: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
-
-  # Returns:
-  # - `point` [%EllipticCurve.Point]: point in default coordinates
+  # Convert point to Jacobian coordinates
   defp toJacobian(p) do
     %Point{x: p.x, y: p.y, z: 1}
   end
 
+  # Convert point back from Jacobian coordinates
+  # Guard: handle point at infinity
+  defp fromJacobian(%Point{y: 0}, _cP) do
+    %Point{x: 0, y: 0, z: 0}
+  end
+
   defp fromJacobian(p, cP) do
     z = inv(p.z, cP)
+    z2 = IntegerUtils.modulo(z * z, cP)
+    z3 = IntegerUtils.modulo(z2 * z, cP)
 
     %Point{
-      x:
-        IntegerUtils.modulo(
-          p.x * IntegerUtils.ipow(z, 2),
-          cP
-        ),
-      y:
-        IntegerUtils.modulo(
-          p.y * IntegerUtils.ipow(z, 3),
-          cP
-        )
+      x: IntegerUtils.modulo(p.x * z2, cP),
+      y: IntegerUtils.modulo(p.y * z3, cP)
     }
   end
 
-  # Doubles a point in elliptic curves
+  # Double a point in elliptic curves (Jacobian)
+  defp jacobianDouble(%Point{y: 0}, _cA, _cP) do
+    %Point{x: 0, y: 0, z: 0}
+  end
 
-  # - `p` [integer]: Point you want to double
-  # - `cP` [integer]: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
-  # - `cA` [integer]: Coefficient of the first-order term of the equation Y^2 = X^3 + cA*X + B (mod p)
-
-  # Returns:
-  # - `point` [%EllipticCurve.Point]: point that represents the sum of First and Second Point
   defp jacobianDouble(p, cA, cP) do
-    if p.y == 0 do
-      %Point{x: 0, y: 0, z: 0}
+    py = p.y
+    px = p.x
+    pz = p.z
+
+    ysq = IntegerUtils.modulo(py * py, cP)
+    s = IntegerUtils.modulo(4 * px * ysq, cP)
+    pz2 = IntegerUtils.modulo(pz * pz, cP)
+    m = IntegerUtils.modulo(3 * px * px + cA * pz2 * pz2, cP)
+    nx = IntegerUtils.modulo(m * m - 2 * s, cP)
+    ny = IntegerUtils.modulo(m * (s - nx) - 8 * ysq * ysq, cP)
+    nz = IntegerUtils.modulo(2 * py * pz, cP)
+
+    %Point{x: nx, y: ny, z: nz}
+  end
+
+  # Add two points in elliptic curves (Jacobian)
+  defp jacobianAdd(%Point{y: 0}, q, _cA, _cP), do: q
+  defp jacobianAdd(p, %Point{y: 0}, _cA, _cP), do: p
+
+  defp jacobianAdd(p, q, cA, cP) do
+    px = p.x
+    py = p.y
+    pz = p.z
+    qx = q.x
+    qy = q.y
+    qz = q.z
+
+    qz2 = IntegerUtils.modulo(qz * qz, cP)
+    pz2 = IntegerUtils.modulo(pz * pz, cP)
+    u1 = IntegerUtils.modulo(px * qz2, cP)
+    u2 = IntegerUtils.modulo(qx * pz2, cP)
+    s1 = IntegerUtils.modulo(py * qz2 * qz, cP)
+    s2 = IntegerUtils.modulo(qy * pz2 * pz, cP)
+
+    if u1 == u2 do
+      if s1 != s2 do
+        %Point{x: 0, y: 0, z: 1}
+      else
+        jacobianDouble(p, cA, cP)
+      end
     else
-      ysq =
-        IntegerUtils.ipow(p.y, 2)
-        |> IntegerUtils.modulo(cP)
-
-      s =
-        (4 * p.x * ysq)
-        |> IntegerUtils.modulo(cP)
-
-      m =
-        (3 * IntegerUtils.ipow(p.x, 2) + cA * IntegerUtils.ipow(p.z, 4))
-        |> IntegerUtils.modulo(cP)
-
-      nx =
-        (IntegerUtils.ipow(m, 2) - 2 * s)
-        |> IntegerUtils.modulo(cP)
-
-      ny =
-        (m * (s - nx) - 8 * IntegerUtils.ipow(ysq, 2))
-        |> IntegerUtils.modulo(cP)
-
-      nz =
-        (2 * p.y * p.z)
-        |> IntegerUtils.modulo(cP)
+      h = u2 - u1
+      r = s2 - s1
+      h2 = IntegerUtils.modulo(h * h, cP)
+      h3 = IntegerUtils.modulo(h * h2, cP)
+      u1h2 = IntegerUtils.modulo(u1 * h2, cP)
+      nx = IntegerUtils.modulo(r * r - h3 - 2 * u1h2, cP)
+      ny = IntegerUtils.modulo(r * (u1h2 - nx) - s1 * h3, cP)
+      nz = IntegerUtils.modulo(h * pz * qz, cP)
 
       %Point{x: nx, y: ny, z: nz}
     end
   end
 
-  # Adds two points in the elliptic curve
-  # - `p` [integer]: First Point you want to add
-  # - `q` [integer]: Second Point you want to add
-  # - `cP` [integer]: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
-  # - `cA` [integer]: Coefficient of the first-order term of the equation Y^2 = X^3 + cA*X + B (mod p)
+  # Montgomery ladder: constant-time scalar multiplication
+  defp jacobianMultiply(%Point{y: 0}, _n, _cN, _cA, _cP) do
+    %Point{x: 0, y: 0, z: 1}
+  end
 
-  # Returns:
-  # - `point` [%EllipticCurve.Point]: point that represents the sum of first and second Point
-  defp jacobianAdd(p, q, cA, cP) do
-    if p.y == 0 do
-      q
+  defp jacobianMultiply(_p, 0, _cN, _cA, _cP) do
+    %Point{x: 0, y: 0, z: 1}
+  end
+
+  defp jacobianMultiply(p, n, cN, _cA, _cP) when n < 0 or n >= cN do
+    n = IntegerUtils.modulo(n, cN)
+
+    if n == 0 do
+      %Point{x: 0, y: 0, z: 1}
     else
-      if q.y == 0 do
-        p
-      else
-        u1 =
-          (p.x * IntegerUtils.ipow(q.z, 2))
-          |> IntegerUtils.modulo(cP)
+      jacobianMultiply(p, n, cN, _cA, _cP)
+    end
+  end
 
-        u2 =
-          (q.x * IntegerUtils.ipow(p.z, 2))
-          |> IntegerUtils.modulo(cP)
+  defp jacobianMultiply(p, n, _cN, cA, cP) do
+    bitLen = IntegerUtils.bit_length(n)
 
-        s1 =
-          (p.y * IntegerUtils.ipow(q.z, 3))
-          |> IntegerUtils.modulo(cP)
+    r0 = %Point{x: 0, y: 0, z: 1}
+    r1 = %Point{x: p.x, y: p.y, z: p.z}
 
-        s2 =
-          (q.y * IntegerUtils.ipow(p.z, 3))
-          |> IntegerUtils.modulo(cP)
+    montgomery_loop(r0, r1, bitLen - 1, n, cA, cP)
+  end
 
-        if u1 == u2 do
-          if s1 != s2 do
-            %Point{x: 0, y: 0, z: 1}
-          else
-            jacobianDouble(p, cA, cP)
-          end
-        else
-          h = u2 - u1
+  defp montgomery_loop(r0, _r1, i, _n, _cA, _cP) when i < 0, do: r0
 
-          r = s2 - s1
+  defp montgomery_loop(r0, r1, i, n, cA, cP) do
+    if (n >>> i &&& 1) == 0 do
+      new_r1 = jacobianAdd(r0, r1, cA, cP)
+      new_r0 = jacobianDouble(r0, cA, cP)
+      montgomery_loop(new_r0, new_r1, i - 1, n, cA, cP)
+    else
+      new_r0 = jacobianAdd(r0, r1, cA, cP)
+      new_r1 = jacobianDouble(r1, cA, cP)
+      montgomery_loop(new_r0, new_r1, i - 1, n, cA, cP)
+    end
+  end
 
-          h2 =
-            (h * h)
-            |> IntegerUtils.modulo(cP)
+  # Shamir's trick: simultaneous double-and-add for n1*p1 + n2*p2
+  defp shamirMultiply(jp1, n1, jp2, n2, cN, cA, cP) do
+    n1 = if n1 < 0 or n1 >= cN, do: IntegerUtils.modulo(n1, cN), else: n1
+    n2 = if n2 < 0 or n2 >= cN, do: IntegerUtils.modulo(n2, cN), else: n2
 
-          h3 =
-            (h * h2)
-            |> IntegerUtils.modulo(cP)
+    jp1p2 = jacobianAdd(jp1, jp2, cA, cP)
 
-          u1h2 =
-            (u1 * h2)
-            |> IntegerUtils.modulo(cP)
+    l = max(IntegerUtils.bit_length(n1), IntegerUtils.bit_length(n2))
+    r = %Point{x: 0, y: 0, z: 1}
 
-          nx =
-            (IntegerUtils.ipow(r, 2) - h3 - 2 * u1h2)
-            |> IntegerUtils.modulo(cP)
+    shamir_loop(r, l - 1, n1, n2, jp1, jp2, jp1p2, cA, cP)
+  end
 
-          ny =
-            (r * (u1h2 - nx) - s1 * h3)
-            |> IntegerUtils.modulo(cP)
+  defp shamir_loop(r, i, _n1, _n2, _jp1, _jp2, _jp1p2, _cA, _cP) when i < 0, do: r
 
-          nz =
-            (h * p.z * q.z)
-            |> IntegerUtils.modulo(cP)
+  defp shamir_loop(r, i, n1, n2, jp1, jp2, jp1p2, cA, cP) do
+    r = jacobianDouble(r, cA, cP)
+    b1 = n1 >>> i &&& 1
+    b2 = n2 >>> i &&& 1
 
-          %Point{x: nx, y: ny, z: nz}
-        end
+    r =
+      cond do
+        b1 == 1 and b2 == 1 -> jacobianAdd(r, jp1p2, cA, cP)
+        b1 == 1 -> jacobianAdd(r, jp1, cA, cP)
+        b2 == 1 -> jacobianAdd(r, jp2, cA, cP)
+        true -> r
       end
-    end
-  end
 
-  # Multily point and scalar in elliptic curves
-
-  # - `p` [integer]: First Point to mutiply
-  # - `n` [integer]: Scalar to mutiply
-  # - `cN` [integer]: Order of the elliptic curve
-  # - `cP` [integer]: Prime number in the module of the equation Y^2 = X^3 + cA*X + B (mod p)
-  # - `cA` [integer]: Coefficient of the first-order term of the equation Y^2 = X^3 + cA*X + B (mod p)
-
-  # Returns:
-  # - `point` [%EllipticCurve.Point]: point that represents the sum of First and Second Point
-  defp jacobianMultiply(_p, n, _cN, _cA, _cP) when n == 0 do
-    %Point{x: 0, y: 0, z: 1}
-  end
-
-  defp jacobianMultiply(p, n, _cN, _cA, _cP) when n == 1 do
-    if p.y == 0 do
-      %Point{x: 0, y: 0, z: 1}
-    else
-      p
-    end
-  end
-
-  defp jacobianMultiply(p, n, cN, cA, cP) when n < 0 or n >= cN do
-    if p.y == 0 do
-      %Point{x: 0, y: 0, z: 1}
-    else
-      jacobianMultiply(p, IntegerUtils.modulo(n, cN), cN, cA, cP)
-    end
-  end
-
-  defp jacobianMultiply(p, _n, _cN, _cA, _cP) when p.y == 0 do
-    %Point{x: 0, y: 0, z: 1}
-  end
-
-  defp jacobianMultiply(p, n, cN, cA, cP) when rem(n, 2) == 0 do
-    jacobianMultiply(p, div(n, 2), cN, cA, cP)
-    |> jacobianDouble(cA, cP)
-  end
-
-  defp jacobianMultiply(p, n, cN, cA, cP) do
-    jacobianMultiply(p, div(n, 2), cN, cA, cP)
-    |> jacobianDouble(cA, cP)
-    |> jacobianAdd(p, cA, cP)
+    shamir_loop(r, i - 1, n1, n2, jp1, jp2, jp1p2, cA, cP)
   end
 end

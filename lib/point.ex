@@ -4,13 +4,12 @@ defmodule EllipticCurve.Point do
 
   Parameters:
   - `:x` [integer]: first point coordinate;
-  - `:y` [integer]: first point coordinate;
-  - `:z` [integer]: first point coordinate (used only in Jacobian coordinates);
+  - `:y` [integer]: second point coordinate;
+  - `:z` [integer]: third point coordinate (used only in Jacobian coordinates);
   """
   defstruct [:x, :y, z: 0]
 
-  def isAtInfinity?(p) do
-    p.y == 0
+  def isAtInfinity?(%__MODULE__{y: y}) do
+    y == 0
   end
-
 end

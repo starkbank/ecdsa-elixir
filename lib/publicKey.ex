@@ -1,42 +1,20 @@
 defmodule EllipticCurve.PublicKey do
   @moduledoc """
   Used to convert public keys between struct and .der or .pem formats.
-
-  Functions:
-  - toPem()
-  - toDer()
-  - fromPem()
-  - fromPem!()
-  - fromDer()
-  - fromDer!()
+  Supports compressed public key format.
   """
 
   alias __MODULE__, as: PublicKey
   alias EllipticCurve.Utils.{Der, BinaryAscii}
   alias EllipticCurve.{Point, Curve, Math}
 
-  @doc """
-  Holds public key data. Is usually extracted from .pem files or from the private key itself.
-
-  Parameters:
-  - `:point` [%EllipticCurve.Utils.Point]: public key point data;
-  - `:curve` [%EllipticCurve.Curve]: public key curve information;
-  """
   defstruct [:point, :curve]
 
+  @evenTag "02"
+  @oddTag "03"
+
   @doc """
-  Converts a public key in decoded struct format into a pem string
-
-  Parameters:
-  - `publicKey` [%EllipticCurve.PublicKey]: decoded public key struct;
-
-  Returns:
-  - `pem` [string]: public key in pem format
-
-  ## Example:
-
-      iex> EllipticCurve.PublicKey.toPem(%EllipticCurve.PublicKey{...})
-      "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAErp2I78X4cqHscCRWMT4rhouyO197iQXR\nfdGgsgfS/UGaIviYiqnG3SSa9dsOHU/NkVSTLkBPCI0RQLF3554dZg==\n-----END PUBLIC KEY-----\n"
+  Converts a public key in decoded struct format into a pem string.
   """
   def toPem(publicKey) do
     publicKey
@@ -45,18 +23,7 @@ defmodule EllipticCurve.PublicKey do
   end
 
   @doc """
-  Converts a public key in decoded struct format into a der string (raw binary)
-
-  Parameters:
-  - `publicKey` [%EllipticCurve.PublicKey]: decoded public key struct;
-
-  Returns:
-  - `der` [string]: public key in der format
-
-  ## Example:
-
-      iex> EllipticCurve.PublicKey.toDer(%EllipticCurve.PublicKey{...})
-      <<48, 86, 48, 16, 6, 7, 42, 134, 72, 206, 61, ...>>
+  Converts a public key in decoded struct format into a der string (raw binary).
   """
   def toDer(publicKey) do
     Der.encodeSequence([
@@ -92,18 +59,19 @@ defmodule EllipticCurve.PublicKey do
   end
 
   @doc """
-  Converts a public key in pem format into decoded struct format
+  Converts the public key to compressed hex string format.
+  """
+  def toCompressed(publicKey) do
+    baseLength = 2 * Curve.getLength(publicKey.curve)
+    parityTag = if rem(publicKey.point.y, 2) == 0, do: @evenTag, else: @oddTag
+    xHex = Integer.to_string(publicKey.point.x, 16)
+            |> String.downcase()
+            |> String.pad_leading(baseLength, "0")
+    parityTag <> xHex
+  end
 
-  Parameters:
-  - `pem` [string]: public key in pem format
-
-  Returns {:ok, publicKey}:
-  - `publicKey` [%EllipticCurve.PublicKey]: decoded public key struct;
-
-  ## Example:
-
-      iex> EllipticCurve.PublicKey.fromPem("-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAErp2I78X4cqHscCRWMT4rhouyO197iQXR\nfdGgsgfS/UGaIviYiqnG3SSa9dsOHU/NkVSTLkBPCI0RQLF3554dZg==\n-----END PUBLIC KEY-----\n")
-      {:ok, %EllipticCurve.PublicKey{...}}
+  @doc """
+  Converts a public key in pem format into decoded struct format.
   """
   def fromPem(pem) do
     {:ok, fromPem!(pem)}
@@ -111,60 +79,18 @@ defmodule EllipticCurve.PublicKey do
     e in RuntimeError -> {:error, e}
   end
 
-  @doc """
-  Converts a public key in pem format into decoded struct format
-
-  Parameters:
-  - `pem` [string]: public key in pem format
-
-  Returns:
-  - `publicKey` [%EllipticCurve.PublicKey]: decoded public key struct;
-
-  ## Example:
-
-      iex> EllipticCurve.PublicKey.fromPem!("-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAErp2I78X4cqHscCRWMT4rhouyO197iQXR\nfdGgsgfS/UGaIviYiqnG3SSa9dsOHU/NkVSTLkBPCI0RQLF3554dZg==\n-----END PUBLIC KEY-----\n")
-      %EllipticCurve.PublicKey{...}
-  """
   def fromPem!(pem) do
     pem
     |> Der.fromPem()
     |> fromDer!()
   end
 
-  @doc """
-  Converts a public key in der (raw binary) format into decoded struct format
-
-  Parameters:
-  - `der` [string]: public key in der format
-
-  Returns {:ok, publicKey}:
-  - `publicKey` [%EllipticCurve.PublicKey]: decoded public key struct;
-
-  ## Example:
-
-      iex> EllipticCurve.PublicKey.fromDer(<<48, 86, 48, 16, 6, 7, 42, 134, ...>>)
-      {:ok, %EllipticCurve.PublicKey{...}}
-  """
   def fromDer(der) do
     {:ok, fromDer!(der)}
   rescue
     e in RuntimeError -> {:error, e}
   end
 
-  @doc """
-  Converts a public key in der (raw binary) format into decoded struct format
-
-  Parameters:
-  - `der` [string]: public key in der format
-
-  Returns:
-  - `publicKey` [%EllipticCurve.PublicKey]: decoded public key struct;
-
-  ## Example:
-
-      iex> EllipticCurve.PublicKey.fromDer!(<<48, 86, 48, 16, 6, 7, 42, 134, ...>>)
-      %EllipticCurve.PublicKey{...}
-  """
   def fromDer!(der) do
     {s1, empty} = Der.removeSequence(der)
 
@@ -191,7 +117,7 @@ defmodule EllipticCurve.PublicKey do
     end
 
     binary_part(pointString, 2, byte_size(pointString) - 2)
-    |> fromString!(curve.name)
+    |> fromString!(curve)
   end
 
   @doc false
@@ -203,7 +129,7 @@ defmodule EllipticCurve.PublicKey do
 
   @doc false
   def fromString!(string, curve \\ :secp256k1, validatePoint \\ true) do
-    curve = Curve.KnownCurves.getCurveByName(curve)
+    curve = resolve_curve(curve)
     baseLength = Curve.getLength(curve)
 
     xs = binary_part(string, 0, baseLength)
@@ -227,4 +153,25 @@ defmodule EllipticCurve.PublicKey do
       true -> publicKey
     end
   end
+
+  @doc """
+  Recover a public key from a compressed hex string.
+  """
+  def fromCompressed(string, curve \\ :secp256k1) do
+    curve = resolve_curve(curve)
+    parityTag = String.slice(string, 0, 2)
+    xHex = String.slice(string, 2..-1//1)
+
+    if parityTag not in [@evenTag, @oddTag] do
+      raise "Compressed string should start with 02 or 03"
+    end
+
+    x = String.to_integer(xHex, 16)
+    y = Curve.y(curve, x, parityTag == @evenTag)
+
+    %PublicKey{point: %Point{x: x, y: y}, curve: curve}
+  end
+
+  defp resolve_curve(%Curve{} = curve), do: curve
+  defp resolve_curve(name), do: Curve.KnownCurves.getCurveByName(name)
 end
