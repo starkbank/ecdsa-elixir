@@ -1,8 +1,7 @@
-defmodule Rfc6979KnownAnswerTest do
+defmodule Prime256v1PublicKeyDerivationTest do
   @moduledoc """
-  Test vectors from RFC 6979 Appendix A.2.5 (prime256v1/SHA-256).
-  The r values match the RFC exactly; s values are low-S normalized
-  (s = N - s when RFC s > N/2).
+  RFC 6979 A.2.5 public key derivation. Signatures are hedged, so r/s
+  no longer match fixed test vectors, but pubkey derivation is unchanged.
   """
   use ExUnit.Case
 
@@ -24,28 +23,22 @@ defmodule Rfc6979KnownAnswerTest do
     assert publicKey.point.y == 0x7903FE1008B8BC99A41AE9E95628BC64F2F1B20C2D7E9F5177A3C294D4462299
   end
 
-  test "testSampleMessageSignature", %{privateKey: privateKey, publicKey: publicKey} do
+  test "testSampleMessageRoundTrip", %{privateKey: privateKey, publicKey: publicKey, curve: curve} do
     sig = Ecdsa.sign("sample", privateKey)
-    # r matches RFC 6979 A.2.5 exactly
-    assert sig.r == 0xEFD48B2AACB6A8FD1140DD9CD45E81D69D2C877B56AAF991C34D0EA84EAF3716
-    # s is low-S normalized: N - 0xF7CB1C942D657C41D436C7A1B6E29F65F3E900DBB9AFF4064DC4AB2F843ACDA8
-    assert sig.s == 0x834E36AD29A83BF2BC9385E491D6099C8FDF9D1ED67AA7EA5F51F93782857A9
+    assert sig.s <= div(curve."N", 2)
     assert Ecdsa.verify?("sample", sig, publicKey)
   end
 
-  test "testTestMessageSignature", %{privateKey: privateKey, publicKey: publicKey} do
+  test "testTestMessageRoundTrip", %{privateKey: privateKey, publicKey: publicKey, curve: curve} do
     sig = Ecdsa.sign("test", privateKey)
-    # r matches RFC 6979 A.2.5 exactly
-    assert sig.r == 0xF1ABB023518351CD71D881567B1EA663ED3EFCF6C5132B354F28D3B0B7D38367
-    # s already low-S, matches RFC directly
-    assert sig.s == 0x019F4113742A2B14BD25926B49C649155F267E60D3814B4C0CC84250E46F0083
+    assert sig.s <= div(curve."N", 2)
     assert Ecdsa.verify?("test", sig, publicKey)
   end
 end
 
-defmodule Secp256k1KnownAnswerTest do
+defmodule Secp256k1PublicKeyDerivationTest do
   @moduledoc """
-  Known-answer tests for secp256k1 with secret=1 (pubkey = generator G).
+  secp256k1 with secret=1 (pubkey = generator G).
   """
   use ExUnit.Case
 
@@ -64,17 +57,13 @@ defmodule Secp256k1KnownAnswerTest do
     assert publicKey.point.y == curve."G".y
   end
 
-  test "testSampleMessageSignature", %{privateKey: privateKey, publicKey: publicKey} do
+  test "testSampleMessageRoundTrip", %{privateKey: privateKey, publicKey: publicKey} do
     sig = Ecdsa.sign("sample", privateKey)
-    assert sig.r == 0x58DB657BCD631038BEA07B4941172F0167ACA98F12B55E3176BD1C35435D6501
-    assert sig.s == 0x3A78E73D8FF8AB554E13C10F6390D81A882F91945D6275493882676170B53A57
     assert Ecdsa.verify?("sample", sig, publicKey)
   end
 
-  test "testTestMessageSignature", %{privateKey: privateKey, publicKey: publicKey} do
+  test "testTestMessageRoundTrip", %{privateKey: privateKey, publicKey: publicKey} do
     sig = Ecdsa.sign("test", privateKey)
-    assert sig.r == 0x98DF3AAED18D1299109E9732E3015F7E68E5D1FDEAD6924809B410D970A3B0CE
-    assert sig.s == 0x3EF15987C6592379BAAD6392586A382D63952572632FCD951AE75E7471C144C6
     assert Ecdsa.verify?("test", sig, publicKey)
   end
 end
@@ -219,20 +208,19 @@ defmodule ForgeryAttemptTest do
   end
 end
 
-defmodule Rfc6979Test do
+defmodule HedgedSignatureTest do
   use ExUnit.Case
 
   alias EllipticCurve.{PrivateKey, Ecdsa}
 
-  test "testDeterministicSignature" do
+  test "testSameInputsProduceDifferentSignatures" do
     privateKey = PrivateKey.generate()
     message = "test message"
 
     signature1 = Ecdsa.sign(message, privateKey)
     signature2 = Ecdsa.sign(message, privateKey)
 
-    assert signature1.r == signature2.r
-    assert signature1.s == signature2.s
+    assert signature1.r != signature2.r or signature1.s != signature2.s
   end
 
   test "testDifferentMessagesDifferentSignatures" do
@@ -445,15 +433,14 @@ defmodule HashTruncationTest do
     refute Ecdsa.verify?("wrong message", signature, publicKey, hashfunc: :sha512)
   end
 
-  test "testSha512DeterministicSignature" do
+  test "testSha512SignaturesAreHedged" do
     privateKey = PrivateKey.generate()
     message = "test message"
 
     signature1 = Ecdsa.sign(message, privateKey, hashfunc: :sha512)
     signature2 = Ecdsa.sign(message, privateKey, hashfunc: :sha512)
 
-    assert signature1.r == signature2.r
-    assert signature1.s == signature2.s
+    assert signature1.r != signature2.r or signature1.s != signature2.s
   end
 
   test "testHashMismatchFails" do
@@ -484,7 +471,7 @@ defmodule Prime256v1SecurityTest do
     assert Ecdsa.verify?(message, signature, publicKey)
   end
 
-  test "testDeterministicSignature" do
+  test "testSignaturesAreHedged" do
     curve = KnownCurves.prime256v1()
     privateKey = PrivateKey.generate(nil, curve)
     message = "test message"
@@ -492,8 +479,7 @@ defmodule Prime256v1SecurityTest do
     signature1 = Ecdsa.sign(message, privateKey)
     signature2 = Ecdsa.sign(message, privateKey)
 
-    assert signature1.r == signature2.r
-    assert signature1.s == signature2.s
+    assert signature1.r != signature2.r or signature1.s != signature2.s
   end
 
   test "testWrongCurveKeyFails" do

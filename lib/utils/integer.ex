@@ -73,7 +73,10 @@ defmodule EllipticCurve.Utils.Integer do
   end
 
   @doc """
-  Generate deterministic nonce values per RFC 6979.
+  Generate nonce values per hedged RFC 6979: deterministic k derivation
+  with fresh random entropy mixed into K-init (RFC 6979 §3.6). Same message
+  and key yield different signatures, while preserving RFC 6979's protection
+  against RNG failures.
   Returns the HMAC-DRBG state {k, v} and parameters needed to generate candidates.
   """
   def rfc6979_init(hashBytes, secret, curve, hashfunc) do
@@ -87,13 +90,15 @@ defmodule EllipticCurve.Utils.Integer do
     hashHex = Integer.to_string(hashReduced, 16) |> String.pad_leading(orderByteLen * 2, "0")
     hashOctets = Base.decode16!(hashHex, case: :mixed)
 
+    extraEntropy = :crypto.strong_rand_bytes(orderByteLen)
+
     hLen = byte_size(:crypto.hash(hashfunc, <<>>))
     v = :binary.copy(<<1>>, hLen)
     k = :binary.copy(<<0>>, hLen)
 
-    k = :crypto.mac(:hmac, hashfunc, k, v <> <<0>> <> secretBytes <> hashOctets)
+    k = :crypto.mac(:hmac, hashfunc, k, v <> <<0>> <> secretBytes <> hashOctets <> extraEntropy)
     v = :crypto.mac(:hmac, hashfunc, k, v)
-    k = :crypto.mac(:hmac, hashfunc, k, v <> <<1>> <> secretBytes <> hashOctets)
+    k = :crypto.mac(:hmac, hashfunc, k, v <> <<1>> <> secretBytes <> hashOctets <> extraEntropy)
     v = :crypto.mac(:hmac, hashfunc, k, v)
 
     {k, v, orderBitLen, curve."N", hashfunc}

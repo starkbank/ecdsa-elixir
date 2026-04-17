@@ -29,4 +29,14 @@ defmodule SignatureTest do
     assert signature1.r == signature2.r
     assert signature1.s == signature2.s
   end
+
+  test "testUniqueness" do
+    privateKey = PrivateKey.generate()
+    message = "This is a text message"
+
+    signature1 = Ecdsa.sign(message, privateKey)
+    signature2 = Ecdsa.sign(message, privateKey)
+
+    assert Signature.toBase64(signature1) != Signature.toBase64(signature2)
+  end
 end
