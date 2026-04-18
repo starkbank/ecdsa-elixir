@@ -36,6 +36,7 @@ defmodule EllipticCurve.Curve.KnownCurves do
   """
   def add(curve) do
     ensure_started()
+    curve = Curve.withDerived(curve)
     Agent.update(__MODULE__, fn curves ->
       Map.put(curves, curve.oid, curve)
     end)
@@ -74,7 +75,7 @@ defmodule EllipticCurve.Curve.KnownCurves do
   end
 
   def secp256k1 do
-    %Curve{
+    Curve.withDerived(%Curve{
       name: :secp256k1,
       A: 0x0000000000000000000000000000000000000000000000000000000000000000,
       B: 0x0000000000000000000000000000000000000000000000000000000000000007,
@@ -85,11 +86,11 @@ defmodule EllipticCurve.Curve.KnownCurves do
         y: 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
       },
       oid: [1, 3, 132, 0, 10]
-    }
+    })
   end
 
   def prime256v1 do
-    %Curve{
+    Curve.withDerived(%Curve{
       name: :prime256v1,
       nistName: "P-256",
       A: 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC,
@@ -101,6 +102,6 @@ defmodule EllipticCurve.Curve.KnownCurves do
         y: 0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5
       },
       oid: [1, 2, 840, 10045, 3, 1, 7]
-    }
+    })
   end
 end

@@ -16,8 +16,24 @@ defmodule EllipticCurve.Curve do
     - `:name` [string]: curve name
     - `:nistName` [string]: NIST name (optional)
     - `:oid` [list of numbers]: ASN.1 Object Identifier
+    - `:nBitLength` [number]: bit length of N, cached for performance
   """
-  defstruct [:A, :B, :P, :N, :G, :name, :oid, :nistName]
+  defstruct [:A, :B, :P, :N, :G, :name, :oid, :nistName, :nBitLength]
+
+  @doc """
+  Returns a curve with `:nBitLength` populated. Idempotent.
+  """
+  def withDerived(%__MODULE__{nBitLength: nbl} = curve) when is_integer(nbl), do: curve
+
+  def withDerived(%__MODULE__{} = curve) do
+    %{curve | nBitLength: IntegerUtils.bit_length(curve."N")}
+  end
+
+  @doc """
+  Returns the cached bit length of N, computing it on demand if missing.
+  """
+  def nBitLength(%__MODULE__{nBitLength: nbl}) when is_integer(nbl), do: nbl
+  def nBitLength(%__MODULE__{N: n}), do: IntegerUtils.bit_length(n)
 
   @doc """
   Verifies if the point `p` is on the curve using the elliptic curve equation:

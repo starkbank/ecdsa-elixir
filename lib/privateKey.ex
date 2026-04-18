@@ -169,6 +169,6 @@ defmodule EllipticCurve.PrivateKey do
     }
   end
 
-  defp resolve_curve(%Curve{} = curve), do: curve
+  defp resolve_curve(%Curve{} = curve), do: Curve.withDerived(curve)
   defp resolve_curve(name), do: Curve.KnownCurves.getCurveByName(name)
 end

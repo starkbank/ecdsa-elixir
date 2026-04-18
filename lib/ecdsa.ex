@@ -22,7 +22,7 @@ defmodule EllipticCurve.Ecdsa do
 
     curveData = privateKey.curve
     byteMessage = :crypto.hash(hashfunc, message)
-    numberMessage = IntegerUtils.numberFromByteString(byteMessage, IntegerUtils.bit_length(curveData."N"))
+    numberMessage = IntegerUtils.numberFromByteString(byteMessage, Curve.nBitLength(curveData))
 
     state = IntegerUtils.rfc6979_init(byteMessage, privateKey.secret, curveData, hashfunc)
 
@@ -51,7 +51,7 @@ defmodule EllipticCurve.Ecdsa do
   defp find_valid_rs(state, numberMessage, curveData, secret) do
     {randNum, newState} = IntegerUtils.rfc6979_next(state)
 
-    randSignPoint = Math.multiply(curveData."G", randNum, curveData."N", curveData."A", curveData."P")
+    randSignPoint = Math.multiplyGenerator(curveData, randNum)
     r = IntegerUtils.modulo(randSignPoint.x, curveData."N")
     s = IntegerUtils.modulo(
       (numberMessage + r * secret) * Math.inv(randNum, curveData."N"),
@@ -75,7 +75,7 @@ defmodule EllipticCurve.Ecdsa do
 
     curveData = publicKey.curve
     byteMessage = :crypto.hash(hashfunc, message)
-    numberMessage = IntegerUtils.numberFromByteString(byteMessage, IntegerUtils.bit_length(curveData."N"))
+    numberMessage = IntegerUtils.numberFromByteString(byteMessage, Curve.nBitLength(curveData))
 
     r = signature.r
     s = signature.s

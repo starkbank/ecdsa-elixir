@@ -80,7 +80,7 @@ defmodule EllipticCurve.Utils.Integer do
   Returns the HMAC-DRBG state {k, v} and parameters needed to generate candidates.
   """
   def rfc6979_init(hashBytes, secret, curve, hashfunc) do
-    orderBitLen = bit_length(curve."N")
+    orderBitLen = EllipticCurve.Curve.nBitLength(curve)
     orderByteLen = div(orderBitLen + 7, 8)
 
     secretHex = Integer.to_string(secret, 16) |> String.pad_leading(orderByteLen * 2, "0")
