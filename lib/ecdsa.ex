@@ -92,9 +92,7 @@ defmodule EllipticCurve.Ecdsa do
           IntegerUtils.modulo(numberMessage * inv, curveData."N"),
           publicKey.point,
           IntegerUtils.modulo(r * inv, curveData."N"),
-          curveData."N",
-          curveData."A",
-          curveData."P"
+          curveData
         )
 
         if Point.isAtInfinity?(v) do

@@ -94,8 +94,11 @@ defmodule EllipticCurve.Math do
   end
 
   @doc """
-  Compute n1*p1 + n2*p2 using Shamir's trick (simultaneous double-and-add).
-  Not constant-time -- use only with public scalars (e.g. verification).
+  Compute n1*p1 + n2*p2. If `curve` is given and exposes `glvParams`
+  (e.g. secp256k1), uses the GLV endomorphism to split both scalars into
+  ~128-bit halves and run a 4-scalar simultaneous multi-exponentiation.
+  Otherwise falls back to Shamir's trick with JSF. Not constant-time --
+  use only with public scalars (e.g. verification).
   """
   def multiplyAndAdd(p1, n1, p2, n2, cN, cA, cP) do
     shamirMultiply(
@@ -104,6 +107,15 @@ defmodule EllipticCurve.Math do
       cN, cA, cP
     )
     |> fromJacobian(cP)
+  end
+
+  def multiplyAndAdd(p1, n1, p2, n2, %EllipticCurve.Curve{glvParams: nil} = curve) do
+    multiplyAndAdd(p1, n1, p2, n2, curve."N", curve."A", curve."P")
+  end
+
+  def multiplyAndAdd(p1, n1, p2, n2, %EllipticCurve.Curve{} = curve) do
+    glvMultiplyAndAdd(p1, n1, p2, n2, curve)
+    |> fromJacobian(curve."P")
   end
 
   @doc """
@@ -468,5 +480,111 @@ defmodule EllipticCurve.Math do
     new_d1 = if 2 * d1 == 1 + u1, do: 1 - d1, else: d1
 
     do_jsf(k0 >>> 1, k1 >>> 1, new_d0, new_d1, [{u0, u1} | acc])
+  end
+
+  # Compute n1*p1 + n2*p2 using the GLV endomorphism. Splits each 256-bit
+  # scalar into two ~128-bit scalars via k = k1 + k2*lambda (mod N), then
+  # runs a 4-scalar simultaneous double-and-add over (p1, phi(p1), p2, phi(p2))
+  # with a 16-entry precomputed table of subset sums. Halves the loop
+  # length versus the plain Shamir path.
+  defp glvMultiplyAndAdd(p1, n1, p2, n2, curve) do
+    glv = curve.glvParams
+    cN = curve."N"
+    cA = curve."A"
+    cP = curve."P"
+    beta = glv.beta
+
+    {k1, k2} = glvDecompose(IntegerUtils.modulo(n1, cN), glv, cN)
+    {k3, k4} = glvDecompose(IntegerUtils.modulo(n2, cN), glv, cN)
+
+    # Base points (affine, z=1) -- phi((x,y)) = (beta*x mod P, y).
+    bases = [
+      %Point{x: p1.x, y: p1.y, z: 1},
+      %Point{x: IntegerUtils.modulo(beta * p1.x, cP), y: p1.y, z: 1},
+      %Point{x: p2.x, y: p2.y, z: 1},
+      %Point{x: IntegerUtils.modulo(beta * p2.x, cP), y: p2.y, z: 1}
+    ]
+
+    scalars = [k1, k2, k3, k4]
+
+    {bases, scalars} = absorbSigns(bases, scalars, cP)
+
+    # Precompute table[idx] = sum of bases[i] selected by bits of idx.
+    table = buildGlvTable(bases, cA, cP)
+
+    maxLen = scalars |> Enum.map(&IntegerUtils.bit_length/1) |> Enum.max()
+    [s0, s1, s2, s3] = scalars
+
+    glv_loop(%Point{x: 0, y: 0, z: 1}, maxLen - 1, s0, s1, s2, s3, table, cA, cP)
+  end
+
+  defp glv_loop(r, bit, _s0, _s1, _s2, _s3, _table, _cA, _cP) when bit < 0, do: r
+
+  defp glv_loop(r, bit, s0, s1, s2, s3, table, cA, cP) do
+    r = jacobianDouble(r, cA, cP)
+
+    idx =
+      (s0 >>> bit &&& 1) |||
+        ((s1 >>> bit &&& 1) <<< 1) |||
+        ((s2 >>> bit &&& 1) <<< 2) |||
+        ((s3 >>> bit &&& 1) <<< 3)
+
+    r =
+      if idx == 0 do
+        r
+      else
+        jacobianAdd(r, elem(table, idx), cA, cP)
+      end
+
+    glv_loop(r, bit - 1, s0, s1, s2, s3, table, cA, cP)
+  end
+
+  # If scalar is negative, negate it and the corresponding base point.
+  defp absorbSigns(bases, scalars, cP) do
+    pairs =
+      Enum.zip(bases, scalars)
+      |> Enum.map(fn {b, s} ->
+        if s < 0 do
+          {%Point{x: b.x, y: cP - b.y, z: 1}, -s}
+        else
+          {b, s}
+        end
+      end)
+
+    {Enum.map(pairs, &elem(&1, 0)), Enum.map(pairs, &elem(&1, 1))}
+  end
+
+  # Build a 16-entry table of subset sums over 4 base points, indexed by
+  # the 4-bit selector. table[0] = infinity; table[idx] extends a smaller
+  # subset by one base, keeping the construction at 15 adds total.
+  defp buildGlvTable(bases, cA, cP) do
+    bases_tuple = List.to_tuple(bases)
+    zero = %Point{x: 0, y: 0, z: 1}
+
+    Enum.reduce(1..15, {zero}, fn idx, acc ->
+      low = idx &&& -idx
+      i = IntegerUtils.bit_length(low) - 1
+      prev = elem(acc, Bitwise.bxor(idx, low))
+      Tuple.append(acc, jacobianAdd(prev, elem(bases_tuple, i), cA, cP))
+    end)
+  end
+
+  # Decompose k into (k1, k2) with k = k1 + k2*lambda (mod N) and
+  # |k1|, |k2| ~ sqrt(N). Babai rounding against the precomputed basis
+  # {(a1, b1), (a2, b2)}; k1 and k2 may be negative.
+  defp glvDecompose(k, glv, cN) do
+    a1 = glv.a1
+    b1 = glv.b1
+    a2 = glv.a2
+    b2 = glv.b2
+    halfN = div(cN, 2)
+    # Python uses floor division (//); in Elixir, div/2 truncates toward zero.
+    # For these GLV expressions the dividend is non-negative (b1 is negative
+    # in the constants so -b1*k is non-negative), so div == floor here.
+    c1 = div(b2 * k + halfN, cN)
+    c2 = div(-b1 * k + halfN, cN)
+    k1 = k - c1 * a1 - c2 * a2
+    k2 = -c1 * b1 - c2 * b2
+    {k1, k2}
   end
 end

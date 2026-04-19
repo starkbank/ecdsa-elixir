@@ -85,7 +85,18 @@ defmodule EllipticCurve.Curve.KnownCurves do
         x: 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798,
         y: 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
       },
-      oid: [1, 3, 132, 0, 10]
+      oid: [1, 3, 132, 0, 10],
+      # GLV endomorphism phi((x,y)) = (beta*x, y), equivalent to lambda*P.
+      # Basis vectors from Gauss reduction; used to split a 256-bit scalar k
+      # into two ~128-bit scalars (k1, k2) with k = k1 + k2*lambda (mod N).
+      glvParams: %{
+        beta: 0x7AE96A2B657C07106E64479EAC3434E99CF0497512F58995C1396C28719501EE,
+        lambda: 0x5363AD4CC05C30E0A5261C028812645A122E22EA20816678DF02967C1B23BD72,
+        a1: 0x3086D221A7D46BCDE86C90E49284EB15,
+        b1: -0xE4437ED6010E88286F547FA90ABFE4C3,
+        a2: 0x114CA50F7A8E2F3F657C1108D9D44CFD8,
+        b2: 0x3086D221A7D46BCDE86C90E49284EB15
+      }
     })
   end
 

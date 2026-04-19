@@ -17,8 +17,11 @@ defmodule EllipticCurve.Curve do
     - `:nistName` [string]: NIST name (optional)
     - `:oid` [list of numbers]: ASN.1 Object Identifier
     - `:nBitLength` [number]: bit length of N, cached for performance
+    - `:glvParams` [map]: GLV endomorphism parameters (only for curves that
+      support one, e.g. secp256k1); nil means no endomorphism, fall back
+      to Shamir+JSF
   """
-  defstruct [:A, :B, :P, :N, :G, :name, :oid, :nistName, :nBitLength]
+  defstruct [:A, :B, :P, :N, :G, :name, :oid, :nistName, :nBitLength, :glvParams]
 
   @doc """
   Returns a curve with `:nBitLength` populated. Idempotent.
