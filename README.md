@@ -37,9 +37,9 @@ We ran a test on Elixir 1.19.5 on a MAC Pro. The libraries were run 100 times an
 
 | Library            | sign          | verify  |
 | ------------------ |:-------------:| -------:|
-| starkbank_ecdsa    |     0.6ms     |  0.9ms  |
+| starkbank_ecdsa    |     0.2ms     |  0.6ms  |
 
-Performance is driven by Jacobian coordinates, a Montgomery ladder for constant-time variable-base scalar multiplication, a precomputed window table (2^4-ary method) for the fixed generator used in signing, curve-specific shortcuts in point doubling (A=0 for secp256k1, A=-3 for prime256v1), Shamir's trick for combined scalar multiplication during verification, and the extended Euclidean algorithm for modular inversion.
+Performance is driven by Jacobian coordinates, a Montgomery ladder for constant-time variable-base scalar multiplication, a precomputed affine table of powers-of-two multiples of the generator (`[G, 2G, 4G, ..., 2^n*G]`) combined with a width-2 NAF of the scalar to eliminate doublings during signing, a mixed affine+Jacobian addition fast path, curve-specific shortcuts in point doubling (A=0 for secp256k1, A=-3 for prime256v1), the secp256k1 GLV endomorphism to split 256-bit scalars into two ~128-bit halves for a 4-scalar simultaneous multi-exponentiation during verification, Shamir's trick with Joint Sparse Form as the fallback path for curves without an efficient endomorphism, and the extended Euclidean algorithm for modular inversion.
 
 ### Sample Code
 
