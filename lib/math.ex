@@ -387,34 +387,86 @@ defmodule EllipticCurve.Math do
     end
   end
 
-  # Shamir's trick: simultaneous double-and-add for n1*p1 + n2*p2
+  # Shamir's trick with Joint Sparse Form (Solinas 2001). JSF picks
+  # signed digits in {-1, 0, 1} so at most ~l/2 digit pairs are non-zero,
+  # versus ~3l/4 for the raw binary form. Not constant-time -- use only
+  # with public scalars (e.g. verification).
   defp shamirMultiply(jp1, n1, jp2, n2, cN, cA, cP) do
     n1 = if n1 < 0 or n1 >= cN, do: IntegerUtils.modulo(n1, cN), else: n1
     n2 = if n2 < 0 or n2 >= cN, do: IntegerUtils.modulo(n2, cN), else: n2
 
-    jp1p2 = jacobianAdd(jp1, jp2, cA, cP)
+    if n1 == 0 and n2 == 0 do
+      %Point{x: 0, y: 0, z: 1}
+    else
+      jp1p2 = jacobianAdd(jp1, jp2, cA, cP)
+      jp1mp2 = jacobianAdd(jp1, neg(jp2, cP), cA, cP)
 
-    l = max(IntegerUtils.bit_length(n1), IntegerUtils.bit_length(n2))
-    r = %Point{x: 0, y: 0, z: 1}
+      addTable = %{
+        {1, 0} => jp1,
+        {-1, 0} => neg(jp1, cP),
+        {0, 1} => jp2,
+        {0, -1} => neg(jp2, cP),
+        {1, 1} => jp1p2,
+        {-1, -1} => neg(jp1p2, cP),
+        {1, -1} => jp1mp2,
+        {-1, 1} => neg(jp1mp2, cP)
+      }
 
-    shamir_loop(r, l - 1, n1, n2, jp1, jp2, jp1p2, cA, cP)
+      digits = jsfDigits(n1, n2)
+      r = %Point{x: 0, y: 0, z: 1}
+
+      jsf_shamir_loop(r, digits, addTable, cA, cP)
+    end
   end
 
-  defp shamir_loop(r, i, _n1, _n2, _jp1, _jp2, _jp1p2, _cA, _cP) when i < 0, do: r
+  defp neg(%Point{y: 0} = p, _cP), do: p
+  defp neg(p, cP), do: %Point{x: p.x, y: cP - p.y, z: p.z}
 
-  defp shamir_loop(r, i, n1, n2, jp1, jp2, jp1p2, cA, cP) do
+  defp jsf_shamir_loop(r, [], _addTable, _cA, _cP), do: r
+
+  defp jsf_shamir_loop(r, [{0, 0} | rest], addTable, cA, cP) do
     r = jacobianDouble(r, cA, cP)
-    b1 = n1 >>> i &&& 1
-    b2 = n2 >>> i &&& 1
+    jsf_shamir_loop(r, rest, addTable, cA, cP)
+  end
 
-    r =
-      cond do
-        b1 == 1 and b2 == 1 -> jacobianAdd(r, jp1p2, cA, cP)
-        b1 == 1 -> jacobianAdd(r, jp1, cA, cP)
-        b2 == 1 -> jacobianAdd(r, jp2, cA, cP)
-        true -> r
+  defp jsf_shamir_loop(r, [{u0, u1} | rest], addTable, cA, cP) do
+    r = jacobianDouble(r, cA, cP)
+    r = jacobianAdd(r, Map.fetch!(addTable, {u0, u1}), cA, cP)
+    jsf_shamir_loop(r, rest, addTable, cA, cP)
+  end
+
+  # Joint Sparse Form of (k0, k1): list of signed-digit pairs (u0, u1) in
+  # {-1, 0, 1}, ordered MSB-first. At most one of any two consecutive pairs
+  # is non-zero, giving density ~1/2 instead of ~3/4 from raw binary.
+  defp jsfDigits(k0, k1) do
+    do_jsf(k0, k1, 0, 0, [])
+  end
+
+  defp do_jsf(k0, k1, d0, d1, acc) when k0 + d0 == 0 and k1 + d1 == 0, do: acc
+
+  defp do_jsf(k0, k1, d0, d1, acc) do
+    a0 = k0 + d0
+    a1 = k1 + d1
+
+    u0 =
+      if (a0 &&& 1) == 1 do
+        base = if (a0 &&& 3) == 1, do: 1, else: -1
+        if (a0 &&& 7) in [3, 5] and (a1 &&& 3) == 2, do: -base, else: base
+      else
+        0
       end
 
-    shamir_loop(r, i - 1, n1, n2, jp1, jp2, jp1p2, cA, cP)
+    u1 =
+      if (a1 &&& 1) == 1 do
+        base = if (a1 &&& 3) == 1, do: 1, else: -1
+        if (a1 &&& 7) in [3, 5] and (a0 &&& 3) == 2, do: -base, else: base
+      else
+        0
+      end
+
+    new_d0 = if 2 * d0 == 1 + u0, do: 1 - d0, else: d0
+    new_d1 = if 2 * d1 == 1 + u1, do: 1 - d1, else: d1
+
+    do_jsf(k0 >>> 1, k1 >>> 1, new_d0, new_d1, [{u0, u1} | acc])
   end
 end
