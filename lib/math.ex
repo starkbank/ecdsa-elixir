@@ -287,12 +287,18 @@ defmodule EllipticCurve.Math do
     qy = q.y
     qz = q.z
 
-    qz2 = IntegerUtils.modulo(qz * qz, cP)
     pz2 = IntegerUtils.modulo(pz * pz, cP)
-    u1 = IntegerUtils.modulo(px * qz2, cP)
     u2 = IntegerUtils.modulo(qx * pz2, cP)
-    s1 = IntegerUtils.modulo(py * qz2 * qz, cP)
     s2 = IntegerUtils.modulo(qy * pz2 * pz, cP)
+
+    {u1, s1} =
+      if qz == 1 do
+        # Mixed affine+Jacobian add: qz^2 = qz^3 = 1 saves four multiplications.
+        {px, py}
+      else
+        qz2 = IntegerUtils.modulo(qz * qz, cP)
+        {IntegerUtils.modulo(px * qz2, cP), IntegerUtils.modulo(py * qz2 * qz, cP)}
+      end
 
     if u1 == u2 do
       if s1 != s2 do
@@ -308,7 +314,12 @@ defmodule EllipticCurve.Math do
       u1h2 = IntegerUtils.modulo(u1 * h2, cP)
       nx = IntegerUtils.modulo(r * r - h3 - 2 * u1h2, cP)
       ny = IntegerUtils.modulo(r * (u1h2 - nx) - s1 * h3, cP)
-      nz = IntegerUtils.modulo(h * pz * qz, cP)
+      nz =
+        if qz == 1 do
+          IntegerUtils.modulo(h * pz, cP)
+        else
+          IntegerUtils.modulo(h * pz * qz, cP)
+        end
 
       %Point{x: nx, y: ny, z: nz}
     end
