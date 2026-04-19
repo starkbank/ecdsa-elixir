@@ -6,8 +6,6 @@ defmodule EllipticCurve.Math do
 
   use Bitwise
 
-  @generator_window_bits 4
-
   @doc """
   Tonelli-Shanks algorithm for modular square root. Works for all odd primes.
   """
@@ -109,11 +107,11 @@ defmodule EllipticCurve.Math do
   end
 
   @doc """
-  Fast scalar multiplication n*G where G is the curve generator, using a
-  precomputed window table (2^w-ary method). Roughly 2-3x faster than
-  variable-base multiplication because doublings stay cheap and additions
-  use pre-stored multiples of G. The generator table is cached in
-  `:persistent_term` keyed by the curve name.
+  Fast scalar multiplication n*G using a precomputed affine table of
+  powers-of-two multiples of G and the width-2 NAF of n. Every non-zero
+  NAF digit triggers one mixed add and zero doublings, trading the ~256
+  doublings of a windowed method for ~86 adds on average -- a large net
+  reduction in field multiplications for 256-bit scalars.
   """
   def multiplyGenerator(curve, n) do
     cN = curve."N"
@@ -124,43 +122,45 @@ defmodule EllipticCurve.Math do
     else
       cA = curve."A"
       cP = curve."P"
-      nBitLen = EllipticCurve.Curve.nBitLength(curve)
-      table = generatorTable(curve)
-      w = @generator_window_bits
-      mask = (1 <<< w) - 1
-      startBit = div(nBitLen - 1, w) * w
+      table = generatorPowersTable(curve)
 
       %Point{x: 0, y: 0, z: 1}
-      |> generator_loop(startBit, w, mask, n, table, cA, cP)
+      |> naf_loop(n, 0, table, cA, cP)
       |> fromJacobian(cP)
     end
   end
 
-  defp generator_loop(r, bit, _w, _mask, _n, _table, _cA, _cP) when bit < 0, do: r
+  # Width-2 NAF: at each step, if k is odd, extract signed digit
+  # 2 - (k & 3) in {-1, +1}, subtract from k, then shift right.
+  defp naf_loop(r, 0, _i, _table, _cA, _cP), do: r
 
-  defp generator_loop(r, bit, w, mask, n, table, cA, cP) do
-    r = double_w_times(r, w, cA, cP)
-    window = n >>> bit &&& mask
+  defp naf_loop(r, k, i, table, cA, cP) do
+    {r, k} =
+      if (k &&& 1) == 1 do
+        digit = 2 - (k &&& 3)
+        g = elem(table, i)
 
-    r =
-      if window == 0 do
-        r
+        g_signed =
+          if digit == 1 do
+            g
+          else
+            %Point{x: g.x, y: cP - g.y, z: 1}
+          end
+
+        {jacobianAdd(r, g_signed, cA, cP), k - digit}
       else
-        jacobianAdd(r, elem(table, window), cA, cP)
+        {r, k}
       end
 
-    generator_loop(r, bit - w, w, mask, n, table, cA, cP)
+    naf_loop(r, k >>> 1, i + 1, table, cA, cP)
   end
 
-  defp double_w_times(r, 0, _cA, _cP), do: r
-  defp double_w_times(r, k, cA, cP), do: double_w_times(jacobianDouble(r, cA, cP), k - 1, cA, cP)
-
-  defp generatorTable(curve) do
+  defp generatorPowersTable(curve) do
     key = {__MODULE__, :generator_table, curve.name}
 
     case :persistent_term.get(key, :undefined) do
       :undefined ->
-        table = buildGeneratorTable(curve)
+        table = buildGeneratorPowersTable(curve)
         :persistent_term.put(key, table)
         table
 
@@ -169,21 +169,41 @@ defmodule EllipticCurve.Math do
     end
   end
 
-  defp buildGeneratorTable(curve) do
+  # Build [G, 2G, 4G, ..., 2^nBitLength * G] in affine (z=1) form, so each
+  # add in multiplyGenerator hits the mixed-add fast path.
+  defp buildGeneratorPowersTable(curve) do
     cA = curve."A"
     cP = curve."P"
-    g = %Point{x: curve."G".x, y: curve."G".y, z: 1}
-    infinity = %Point{x: 0, y: 0, z: 1}
-    size = 1 <<< @generator_window_bits
+    nBitLen = EllipticCurve.Curve.nBitLength(curve)
+    current = %Point{x: curve."G".x, y: curve."G".y, z: 1}
 
+    # NAF of an nBitLength-bit scalar can be up to nBitLength+1 digits.
     entries =
-      Enum.reduce(2..(size - 1), [g, infinity], fn _, [prev | _] = acc ->
-        [jacobianAdd(prev, g, cA, cP) | acc]
+      Enum.reduce(0..(nBitLen - 1), [current], fn _, [prev | _] = acc ->
+        [double_to_affine(prev, cA, cP) | acc]
       end)
 
     entries
     |> Enum.reverse()
     |> List.to_tuple()
+  end
+
+  defp double_to_affine(p, cA, cP) do
+    doubled = jacobianDouble(p, cA, cP)
+
+    if doubled.y == 0 do
+      doubled
+    else
+      zInv = inv(doubled.z, cP)
+      zInv2 = IntegerUtils.modulo(zInv * zInv, cP)
+      zInv3 = IntegerUtils.modulo(zInv2 * zInv, cP)
+
+      %Point{
+        x: IntegerUtils.modulo(doubled.x * zInv2, cP),
+        y: IntegerUtils.modulo(doubled.y * zInv3, cP),
+        z: 1
+      }
+    end
   end
 
   @doc """
