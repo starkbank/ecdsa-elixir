@@ -3,7 +3,7 @@ defmodule PrivateKeyTest do
 
   alias EllipticCurve.{PrivateKey}
 
-  test "pem conversion" do
+  test "testPemConversion" do
     privateKey1 = PrivateKey.generate()
 
     pem = PrivateKey.toPem(privateKey1)
@@ -14,7 +14,7 @@ defmodule PrivateKeyTest do
     assert privateKey1.curve == privateKey2.curve
   end
 
-  test "der conversion" do
+  test "testDerConversion" do
     privateKey1 = PrivateKey.generate()
 
     der = PrivateKey.toDer(privateKey1)
@@ -25,7 +25,7 @@ defmodule PrivateKeyTest do
     assert privateKey1.curve == privateKey2.curve
   end
 
-  test "string conversion" do
+  test "testStringConversion" do
     privateKey1 = PrivateKey.generate()
 
     string = PrivateKey.toString(privateKey1)

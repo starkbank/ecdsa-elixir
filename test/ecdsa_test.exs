@@ -3,7 +3,7 @@ defmodule EcdsaTest do
 
   alias EllipticCurve.{PrivateKey, Signature, Ecdsa}
 
-  test "verify right message" do
+  test "testVerifyRightMessage" do
     privateKey = PrivateKey.generate()
     publicKey = PrivateKey.getPublicKey(privateKey)
 
@@ -14,7 +14,7 @@ defmodule EcdsaTest do
     assert Ecdsa.verify?(message, signature, publicKey)
   end
 
-  test "verify wrong message" do
+  test "testVerifyWrongMessage" do
     privateKey = PrivateKey.generate()
     publicKey = PrivateKey.getPublicKey(privateKey)
 
@@ -23,15 +23,15 @@ defmodule EcdsaTest do
 
     signature = Ecdsa.sign(message1, privateKey)
 
-    assert !Ecdsa.verify?(message2, signature, publicKey)
+    refute Ecdsa.verify?(message2, signature, publicKey)
   end
 
-  test "verify zero signature" do
+  test "testZeroSignature" do
     privateKey = PrivateKey.generate()
     publicKey = PrivateKey.getPublicKey(privateKey)
 
     message = "This is the wrong message"
 
-    assert !Ecdsa.verify?(message, %Signature{r: 0, s: 0}, publicKey)
+    refute Ecdsa.verify?(message, %Signature{r: 0, s: 0}, publicKey)
   end
 end
