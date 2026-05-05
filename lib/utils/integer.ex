@@ -1,7 +1,7 @@
 defmodule EllipticCurve.Utils.Integer do
   @moduledoc false
 
-  use Bitwise
+  import Bitwise
 
   def modulo(x, n) do
     rem(x, n)
@@ -33,18 +33,18 @@ defmodule EllipticCurve.Utils.Integer do
     #  We apply the mask to reduce the amount of attempts we might need
     #     to make to get a number that is in range. This is somewhat like
     #     the commonly used 'modulo trick', but without the bias:
-    #    
+    #
     #       "Let's say you invoke secure_rand(0, 60). When the other code
     #        generates a random integer, you might get 243. If you take
     #        (243 & 63)-- noting that the mask is 63-- you get 51. Since
     #        51 is less than 60, we can return this without bias. If we
     #        got 255, then 255 & 63 is 63. 63 > 60, so we try again.
-    #    
+    #
     #        The purpose of the mask is to reduce the number of random
     #        numbers discarded for the sake of ensuring an unbiased
     #        distribution. In the example above, 243 would discard, but
     #        (243 & 63) is in the range of 0 and 60."
-    #    
+    #
     #       (Source: Scott Arciszewski)
 
     randomNumber =

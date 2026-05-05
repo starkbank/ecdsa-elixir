@@ -1,7 +1,7 @@
 defmodule EllipticCurve.Utils.Der do
   @moduledoc false
 
-  use Bitwise
+  import Bitwise
 
   @hexAt "\x00"
   @hexB "\x02"
